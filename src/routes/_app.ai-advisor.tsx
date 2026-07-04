@@ -2,16 +2,18 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { Send, Sparkles, ChevronDown, Shield, Bot, UserCheck } from "lucide-react";
 import { TrustBadge, SignalChip } from "@/components/app-shell";
+import { useMutation } from "@tanstack/react-query";
+import { aiAdvisorApi } from "@/lib/api";
 
 export const Route = createFileRoute("/_app/ai-advisor")({
   head: () => ({
     meta: [
-      { title: "AI Advisor — SBI Life Moments AI" },
+      { title: "AI Advisor — IDBI BANK Life Moments AI" },
       {
         name: "description",
         content: "Talk to your customer-first AI advisor with explainable, transparent reasoning.",
       },
-      { property: "og:title", content: "AI Advisor — SBI Life Moments AI" },
+      { property: "og:title", content: "AI Advisor — IDBI BANK Life Moments AI" },
       {
         property: "og:description",
         content: "Explainable, customer-first AI for your financial life.",
@@ -40,11 +42,10 @@ const seed: Msg[] = [
     text: "Based on my analysis, you can plan to buy a home by **March 2026**.",
     detailed: {
       signals: [
-        "₹5.2L saved of ₹6L down payment target",
+        "₹4.82L current balance",
         "Savings rate trending up 14% YoY",
         "Stable income — 3 yrs same employer",
         "Existing EMIs under 22% of income",
-        "Active property browsing on partner sites",
       ],
       reasoning:
         "Your savings velocity, low debt load, and stable income create a comfortable runway. By Mar 2026 you'd cover the down payment plus 6 months of EMI buffer.",
@@ -63,41 +64,113 @@ const suggestions = [
 ];
 
 function AdvisorPage() {
-  const [messages, setMessages] = useState<Msg[]>(seed);
+  const [messages, setMessages] = useState<Msg[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("idbi_chat_history");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          return seed;
+        }
+      }
+    }
+    return seed;
+  });
   const [input, setInput] = useState("");
   const [expanded, setExpanded] = useState<number | null>(1);
+  const [isThinking, setIsThinking] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+
+  // Save history to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("idbi_chat_history", JSON.stringify(messages));
+    }
+  }, [messages]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isThinking]);
+
+  // Reset Chat Mutation
+  const resetChatMutation = useMutation({
+    mutationFn: aiAdvisorApi.resetChat,
+    onSuccess: () => {
+      setMessages([]);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("idbi_chat_history");
+      }
+    },
+  });
+
+  // Send Message Mutation
+  const chatMutation = useMutation({
+    mutationFn: aiAdvisorApi.chat,
+    onSuccess: (data) => {
+      setIsThinking(false);
+      setMessages((m) => [
+        ...m,
+        {
+          role: "ai",
+          text: data.reply,
+          detailed: data.detailed || undefined,
+        },
+      ]);
+    },
+    onError: (err) => {
+      setIsThinking(false);
+      setMessages((m) => [
+        ...m,
+        {
+          role: "ai",
+          text: "I'm having trouble connecting to my intelligence base right now. Please try again in a few moments.",
+        },
+      ]);
+    },
+  });
 
   const send = (text: string) => {
-    if (!text.trim()) return;
-    const isHighRisk = /loan|home|invest|retire/i.test(text);
-    setMessages((m) => [
-      ...m,
-      { role: "user", text },
-      {
-        role: "ai",
-        text: `Here's my read on **"${text.trim()}"** — based on your transaction patterns and goals.`,
-        detailed: {
-          signals: [
-            "Income stability",
-            "Recent spend trend",
-            "Goal: Home by 2026",
-            "Liquidity buffer ₹2.4L",
-          ],
-          reasoning:
-            "Your cash flow supports this decision with a moderate buffer. The trade-off is opportunity cost on long-term equity returns.",
-          alternatives:
-            "A more conservative path: phase the change over 3 months. An aggressive path: act now and rebalance quarterly.",
-          confidence: 84,
-          humanReview: isHighRisk,
-        },
-      },
-    ]);
+    if (!text.trim() || chatMutation.isPending || isThinking) return;
+    setMessages((m) => [...m, { role: "user", text }]);
     setInput("");
+    setIsThinking(true);
+    chatMutation.mutate(text);
+  };
+
+  const renderMarkdown = (text: string) => {
+    const html = text.replace(
+      /\*\*(.+?)\*\*/g,
+      '<strong class="text-[var(--sbi-navy)] font-bold">$1</strong>',
+    );
+
+    const lines = html.split("\n");
+    let inList = false;
+    const processedLines = lines.map((line) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+        const content = trimmed.substring(2);
+        let prefix = "";
+        if (!inList) {
+          inList = true;
+          prefix = '<ul class="list-disc pl-5 my-1.5 space-y-1">';
+        }
+        return `${prefix}<li>${content}</li>`;
+      } else {
+        let suffix = "";
+        if (inList) {
+          inList = false;
+          suffix = "</ul>";
+        }
+        return `${suffix}${line}`;
+      }
+    });
+
+    if (inList) {
+      processedLines.push("</ul>");
+    }
+
+    return processedLines.join("\n");
   };
 
   return (
@@ -115,8 +188,11 @@ function AdvisorPage() {
             </div>
           </div>
         </div>
-        <button className="rounded-full border border-border bg-white px-4 py-1.5 text-sm font-medium">
-          New Chat
+        <button
+          onClick={() => resetChatMutation.mutate()}
+          className="rounded-full border border-border bg-white px-4 py-1.5 text-sm font-medium hover:bg-slate-50 transition"
+        >
+          Reset Chat
         </button>
       </div>
 
@@ -136,10 +212,7 @@ function AdvisorPage() {
                   <p
                     className="text-sm leading-relaxed text-foreground"
                     dangerouslySetInnerHTML={{
-                      __html: m.text.replace(
-                        /\*\*(.+?)\*\*/g,
-                        '<strong class="text-[var(--sbi-navy)]">$1</strong>',
-                      ),
+                      __html: renderMarkdown(m.text),
                     }}
                   />
 
@@ -192,7 +265,7 @@ function AdvisorPage() {
 
                       <div className="mt-4 flex items-center justify-between">
                         <TrustBadge />
-                        <span className="text-[10px] text-muted-foreground">10:31 AM</span>
+                        <span className="text-[10px] text-muted-foreground">Just now</span>
                       </div>
                     </>
                   )}
@@ -201,6 +274,32 @@ function AdvisorPage() {
             )}
           </div>
         ))}
+
+        {isThinking && (
+          <div className="flex justify-start">
+            <div className="flex w-full max-w-[88%] gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--sbi-blue)]/20 to-[var(--sbi-royal)]/20 animate-pulse">
+                <Sparkles className="h-4 w-4 text-[var(--sbi-royal)] animate-spin" />
+              </div>
+              <div className="flex-1 rounded-2xl rounded-tl-sm border border-border bg-slate-50/50 p-4 shadow-[var(--shadow-soft)] max-w-xs">
+                <div className="flex space-x-1.5 items-center py-1">
+                  <div
+                    className="h-2 w-2 bg-slate-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  ></div>
+                  <div
+                    className="h-2 w-2 bg-slate-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  ></div>
+                  <div
+                    className="h-2 w-2 bg-slate-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         <div ref={endRef} />
       </div>
 
@@ -210,23 +309,32 @@ function AdvisorPage() {
             <button
               key={s}
               onClick={() => send(s)}
-              className="whitespace-nowrap rounded-full border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+              disabled={chatMutation.isPending || isThinking}
+              className="whitespace-nowrap rounded-full border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {s}
             </button>
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <input
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && send(input)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                send(input);
+              }
+            }}
+            disabled={chatMutation.isPending || isThinking}
             placeholder="Ask me anything about your finances..."
-            className="flex-1 rounded-full bg-muted/50 px-4 py-2.5 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-[var(--sbi-blue)]/30"
+            rows={1}
+            className="flex-1 rounded-2xl bg-muted/50 px-4 py-2 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-[var(--sbi-blue)]/30 resize-none max-h-24 overflow-y-auto disabled:opacity-50"
           />
           <button
             onClick={() => send(input)}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--sbi-blue)] text-white shadow-[0_8px_20px_-6px_rgba(0,173,239,0.6)] transition hover:opacity-90"
+            disabled={!input.trim() || chatMutation.isPending || isThinking}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--sbi-blue)] text-white shadow-[0_8px_20px_-6px_rgba(0,173,239,0.6)] transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send className="h-4 w-4" />
           </button>

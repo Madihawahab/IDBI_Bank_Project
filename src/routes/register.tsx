@@ -1,17 +1,17 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
-import { Shield, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Shield, Eye, EyeOff, ArrowRight, User } from "lucide-react";
 import { toast } from "sonner";
 import { authApi } from "@/lib/api";
 
-export const Route = createFileRoute("/login")({
+export const Route = createFileRoute("/register")({
   head: () => ({
     meta: [
-      { title: "Sign In — IDBI BANK Life Moments AI" },
-      { name: "description", content: "Access your AI-first banking companion safely." },
+      { title: "Sign Up — IDBI BANK Life Moments AI" },
+      { name: "description", content: "Create your AI-first banking account safely." },
     ],
   }),
-  component: LoginPage,
+  component: RegisterPage,
 });
 
 function SbiLogoIcon({ className = "h-12 w-12" }: { className?: string }) {
@@ -37,32 +37,21 @@ function SbiLogoIcon({ className = "h-12 w-12" }: { className?: string }) {
   );
 }
 
-interface ValidationErrorDetail {
-  loc: (string | number)[];
-  msg: string;
-  type: string;
-}
-
-interface AxiosErrorLike {
-  response?: {
-    status: number;
-    data?: {
-      detail?: string | ValidationErrorDetail[];
-    };
-  };
-}
-
-function LoginPage() {
+function RegisterPage() {
   const navigate = useNavigate();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPending, setIsPending] = useState(false);
+
+  const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
-
-  const passwordRef = useRef<HTMLInputElement>(null);
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
 
   // Authenticated redirect loop guard
   useEffect(() => {
@@ -83,106 +72,64 @@ function LoginPage() {
     }
   }, [isLoading, navigate]);
 
-  const handleLogin = async (
-    e?: React.FormEvent,
-    customEmail?: string,
-    customPassword?: string,
-  ) => {
-    if (e) e.preventDefault();
-    const loginEmail = customEmail || email;
-    const loginPassword = customPassword || password;
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
 
+    setNameError("");
     setEmailError("");
     setPasswordError("");
+    setConfirmPasswordError("");
 
     let hasError = false;
-    if (!loginEmail || !loginEmail.includes("@")) {
+
+    if (!name || name.trim().length < 2) {
+      setNameError("Full Name must be at least 2 characters.");
+      hasError = true;
+    }
+    if (!email || !email.includes("@")) {
       setEmailError("Please enter a valid email address.");
       hasError = true;
     }
-    if (!loginPassword || loginPassword.length < 4) {
+    if (!password || password.length < 4) {
       setPasswordError("Password must be at least 4 characters.");
       hasError = true;
     }
+    if (password !== confirmPassword) {
+      setConfirmPasswordError("Passwords do not match.");
+      hasError = true;
+    }
+
     if (hasError) return;
 
     setIsPending(true);
-    console.log(`Login attempt: ${loginEmail}`);
     try {
-      const data = await authApi.login({
-        email: loginEmail,
-        password: loginPassword,
+      // 1. Submit registration request
+      await authApi.register({
+        name,
+        email,
+        password,
       });
 
-      console.log(`Login success: ${loginEmail}`);
-      localStorage.setItem("access_token", data.access_token);
-      localStorage.setItem("refresh_token", data.refresh_token);
+      // 2. Automatically log the user in using the returned tokens
+      const loginData = await authApi.login({
+        email,
+        password,
+      });
 
-      toast.success("Login successful. Welcome back!");
+      localStorage.setItem("access_token", loginData.access_token);
+      localStorage.setItem("refresh_token", loginData.refresh_token);
+
       setIsLoading(true);
     } catch (error: unknown) {
+      const err = error as { response?: { data?: { detail?: string } } };
+      let msg = err.response?.data?.detail || "Registration failed. Please try again.";
+      if (msg === "Email already registered") {
+        msg = "An account with this email already exists.";
+        setEmailError("An account with this email already exists.");
+      }
+      toast.error(msg);
       setIsPending(false);
-      const err = error as AxiosErrorLike;
-
-      if (!err.response) {
-        console.log(`Server unavailable: ${loginEmail}`);
-        toast.error("Login failed. Please check your credentials.");
-        setPasswordError("Unable to connect to the server. Please try again.");
-        return;
-      }
-
-      const status = err.response.status;
-      const detail = err.response.data?.detail;
-
-      if (status === 401) {
-        console.log(`Login failed (401): ${loginEmail}`);
-        toast.error("Login failed. Please check your credentials.");
-        setPasswordError("Invalid email or password.");
-        setPassword("");
-        setTimeout(() => passwordRef.current?.focus(), 50);
-      } else if (status === 422) {
-        console.log(`Validation error (422) during login: ${loginEmail}`);
-        toast.error("Login failed. Please check your credentials.");
-
-        if (Array.isArray(detail)) {
-          const emailDetail = detail.find((d: ValidationErrorDetail) => d.loc?.includes("email"));
-          const pwdDetail = detail.find((d: ValidationErrorDetail) => d.loc?.includes("password"));
-
-          if (emailDetail) {
-            setEmailError(emailDetail.msg);
-          }
-          if (pwdDetail) {
-            setPasswordError(pwdDetail.msg);
-            setPassword("");
-            setTimeout(() => passwordRef.current?.focus(), 50);
-          }
-        } else if (typeof detail === "string") {
-          setPasswordError(detail);
-          setPassword("");
-          setTimeout(() => passwordRef.current?.focus(), 50);
-        } else {
-          setPasswordError("Validation failed. Please verify your details.");
-          setPassword("");
-          setTimeout(() => passwordRef.current?.focus(), 50);
-        }
-      } else if (status === 500) {
-        console.log(`Server error (500) during login: ${loginEmail}`);
-        toast.error("Login failed. Please check your credentials.");
-        setPasswordError("Something went wrong. Please try again later.");
-      } else {
-        console.log(`Unexpected error status (${status}) during login: ${loginEmail}`);
-        toast.error("Login failed. Please check your credentials.");
-        const msg =
-          typeof detail === "string" ? detail : "Something went wrong. Please try again later.";
-        setPasswordError(msg);
-        setPassword("");
-        setTimeout(() => passwordRef.current?.focus(), 50);
-      }
     }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    handleLogin(e);
   };
 
   if (isLoading) {
@@ -192,7 +139,6 @@ function LoginPage() {
         <div className="absolute top-1/2 left-1/2 -z-10 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(0,131,108,0.04),transparent_60%)]" />
 
         <div className="flex flex-col items-center text-center max-w-sm animate-[fadeIn_0.6s_ease-out]">
-          {/* Glowing Animated SBI logo */}
           <div className="relative mb-8">
             <div className="absolute inset-0 rounded-full bg-[var(--sbi-blue)]/20 blur-xl animate-[ping_2s_infinite]" />
             <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-[0_8px_30px_rgba(0,45,37,0.08)] border border-[var(--sbi-blue)]/10 animate-[pulse_1.5s_infinite]">
@@ -201,13 +147,12 @@ function LoginPage() {
           </div>
 
           <h2 className="text-xl font-semibold text-[var(--sbi-navy)] tracking-tight">
-            Preparing your financial intelligence...
+            Creating your smart account...
           </h2>
           <p className="mt-3 text-sm text-muted-foreground/80 font-normal leading-relaxed">
-            Structuring your personalized life events and securing your connection.
+            Initializing your Savings Wallet and structuring your custom AI profile.
           </p>
 
-          {/* Simple premium loading bar */}
           <div className="mt-8 h-1 w-48 overflow-hidden rounded-full bg-slate-200/60">
             <div className="h-full rounded-full bg-gradient-to-r from-[var(--sbi-blue)] to-[var(--sbi-royal)] w-0 animate-[loadingProgress_1.8s_ease-in-out_forwards]" />
           </div>
@@ -230,7 +175,6 @@ function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen lg:h-screen flex-col justify-between bg-[var(--sbi-sky)] px-4 py-4 md:py-6 font-sans selection:bg-[var(--sbi-blue)]/20">
-      {/* Background decoration */}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(var(--sbi-blue)_1px,transparent_1px)] opacity-[0.03] [background-size:24px_24px]" />
       <div className="absolute top-0 right-0 -z-10 h-[600px] w-[600px] rounded-full bg-[radial-gradient(circle_at_center,rgba(0,131,108,0.04),transparent_70%)]" />
       <div className="absolute bottom-0 left-0 -z-10 h-[600px] w-[600px] rounded-full bg-[radial-gradient(circle_at_center,rgba(0,131,108,0.03),transparent_70%)]" />
@@ -264,17 +208,39 @@ function LoginPage() {
         <div className="w-full max-w-[420px] rounded-3xl border border-slate-100 bg-white p-6 sm:p-8 shadow-[0_12px_40px_-12px_rgba(0,45,37,0.04)] animate-[slideUp_0.6s_ease-out]">
           <div className="text-center mb-5">
             <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--sbi-blue)]/5 text-[var(--sbi-blue)]">
-              <Shield className="h-5.5 w-5.5" />
+              <User className="h-5.5 w-5.5" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-[var(--sbi-navy)]">
-              Welcome back
+              Create your account
             </h1>
             <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground">
-              Sign in to access your intelligent bank accounts.
+              Register to experience AI-first banking.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-xs font-semibold tracking-wider uppercase text-slate-500 mb-1.5"
+              >
+                Full Name
+              </label>
+              <input
+                id="name"
+                type="text"
+                required
+                disabled={isPending}
+                placeholder="Aarav Sharma"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200/80 bg-slate-50/30 text-sm outline-none transition focus:border-[var(--sbi-blue)] focus:bg-white disabled:opacity-50"
+              />
+              {nameError && (
+                <p className="mt-1 text-xs text-red-500 font-medium text-left">{nameError}</p>
+              )}
+            </div>
+
             <div>
               <label
                 htmlFor="email"
@@ -298,25 +264,15 @@ function LoginPage() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label
-                  htmlFor="password"
-                  className="block text-xs font-semibold tracking-wider uppercase text-slate-500"
-                >
-                  Password
-                </label>
-                <a
-                  href="#"
-                  onClick={(e) => e.preventDefault()}
-                  className="text-xs font-medium text-[var(--sbi-blue)] hover:text-[var(--sbi-royal)] transition-colors"
-                >
-                  Forgot password?
-                </a>
-              </div>
+              <label
+                htmlFor="password"
+                className="block text-xs font-semibold tracking-wider uppercase text-slate-500 mb-1.5"
+              >
+                Password
+              </label>
               <div className="relative">
                 <input
                   id="password"
-                  ref={passwordRef}
                   type={showPassword ? "text" : "password"}
                   required
                   disabled={isPending}
@@ -343,6 +299,30 @@ function LoginPage() {
               )}
             </div>
 
+            <div>
+              <label
+                htmlFor="confirmPassword"
+                className="block text-xs font-semibold tracking-wider uppercase text-slate-500 mb-1.5"
+              >
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                required
+                disabled={isPending}
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200/80 bg-slate-50/30 text-sm outline-none transition focus:border-[var(--sbi-blue)] focus:bg-white disabled:opacity-50"
+              />
+              {confirmPasswordError && (
+                <p className="mt-1 text-xs text-red-500 font-medium text-left">
+                  {confirmPasswordError}
+                </p>
+              )}
+            </div>
+
             <button
               type="submit"
               disabled={isPending}
@@ -351,11 +331,11 @@ function LoginPage() {
               {isPending ? (
                 <>
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Logging in...
+                  Creating Account...
                 </>
               ) : (
                 <>
-                  Login
+                  Create Account
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </>
               )}
@@ -363,27 +343,13 @@ function LoginPage() {
           </form>
 
           <div className="mt-4 text-center text-xs text-slate-500">
-            Don't have an account?{" "}
+            Already have an account?{" "}
             <Link
-              to="/register"
+              to="/login"
               className="font-semibold text-[var(--sbi-blue)] hover:text-[var(--sbi-royal)] transition-colors"
             >
-              Create Account
+              Sign In
             </Link>
-          </div>
-
-          {/* Quick Demo Helper */}
-          <div className="mt-5 pt-4 border-t border-slate-100">
-            <button
-              type="button"
-              disabled={isPending}
-              onClick={() => {
-                handleLogin(undefined, "aarav.sharma@idbi.co.in", "demo1234");
-              }}
-              className="w-full py-2 rounded-2xl border border-dashed border-[var(--sbi-blue)]/30 text-xs font-semibold text-[var(--sbi-blue)] bg-[var(--sbi-blue)]/5 hover:bg-[var(--sbi-blue)]/10 hover:border-[var(--sbi-blue)]/50 transition-all text-center block disabled:opacity-50"
-            >
-              💡 One-click Demo Login
-            </button>
           </div>
         </div>
       </main>

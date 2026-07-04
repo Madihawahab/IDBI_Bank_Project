@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -9,30 +11,26 @@ import {
   Target,
   Shield,
   type LucideIcon,
+  AlertCircle,
 } from "lucide-react";
 import { PageHeader, GlassCard } from "@/components/app-shell";
+import { dashboardApi, transactionsApi } from "@/lib/api";
+import { DashboardData, Transaction } from "../types/api";
 
 export const Route = createFileRoute("/_app/finances")({
   head: () => ({
     meta: [
-      { title: "Finances — SBI Life Moments AI" },
+      { title: "Finances — IDBI BANK Life Moments AI" },
       {
         name: "description",
         content: "Your accounts, income, expenses, investments and goals — all in one place.",
       },
-      { property: "og:title", content: "Finances — SBI Life Moments AI" },
+      { property: "og:title", content: "Finances — IDBI BANK Life Moments AI" },
       { property: "og:description", content: "Complete money management for the modern customer." },
     ],
   }),
   component: FinancesPage,
 });
-
-const accounts = [
-  { name: "Savings — XXXX 4421", bal: "₹4,82,350", trend: "+₹12,840", up: true },
-  { name: "Salary — XXXX 2210", bal: "₹85,400", trend: "+₹85,000", up: true },
-  { name: "Credit Card — Cashback", bal: "− ₹18,420", trend: "Due 28 Jul", up: false },
-  { name: "Fixed Deposit", bal: "₹3,00,000", trend: "6.8% p.a.", up: true },
-];
 
 const investments = [
   { name: "Axis Bluechip SIP", amt: "₹2,84,500", change: "+12.4%" },
@@ -44,6 +42,142 @@ const investments = [
 const bars = [60, 75, 45, 90, 70, 85, 55, 95, 65, 80, 72, 88];
 
 function FinancesPage() {
+  // Fetch Dashboard Data
+  const {
+    data: dashboardData,
+    isLoading: isDashLoading,
+    error: dashError,
+    refetch: refetchDash,
+  } = useQuery<DashboardData>({
+    queryKey: ["dashboard"],
+    queryFn: dashboardApi.getDashboard,
+  });
+
+  // Fetch Transactions List
+  const {
+    data: transactionsList,
+    isLoading: isTxLoading,
+    error: txError,
+    refetch: refetchTx,
+  } = useQuery<Transaction[]>({
+    queryKey: ["transactions"],
+    queryFn: () => transactionsApi.getTransactions(),
+  });
+
+  const handleRetry = () => {
+    refetchDash();
+    refetchTx();
+  };
+
+  const { incomeThisMonth, expensesThisMonth } = useMemo(() => {
+    if (!transactionsList) return { incomeThisMonth: 185000, expensesThisMonth: 82150 };
+
+    let inc = 0;
+    let exp = 0;
+
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    transactionsList.forEach((t) => {
+      const txDate = new Date(t.timestamp);
+      if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
+        if (t.receiver_name === "Aarav Sharma") {
+          inc += t.amount;
+        } else {
+          exp += t.amount;
+        }
+      }
+    });
+
+    return {
+      incomeThisMonth: inc > 0 ? inc : 185000,
+      expensesThisMonth: exp > 0 ? exp : 82150,
+    };
+  }, [transactionsList]);
+
+  const cashFlow = incomeThisMonth - expensesThisMonth;
+
+  if (isDashLoading || isTxLoading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="h-12 w-1/3 bg-slate-200 rounded-2xl" />
+
+        {/* Hero Section Skeletons */}
+        <div className="grid gap-5 lg:grid-cols-3">
+          <div className="h-56 bg-slate-200 rounded-3xl lg:col-span-2" />
+          <div className="space-y-3">
+            <div className="h-16 bg-slate-200 rounded-3xl" />
+            <div className="h-16 bg-slate-200 rounded-3xl" />
+            <div className="h-16 bg-slate-200 rounded-3xl" />
+          </div>
+        </div>
+
+        {/* Double Column Skeletons */}
+        <div className="grid gap-5 lg:grid-cols-2">
+          <div className="h-64 bg-slate-200 rounded-3xl" />
+          <div className="h-64 bg-slate-200 rounded-3xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (dashError || txError) {
+    return (
+      <div className="rounded-3xl border border-red-100 bg-red-50/50 p-6 text-center">
+        <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-3" />
+        <h3 className="font-bold text-red-800">Failed to load finances</h3>
+        <p className="text-sm text-red-600 mt-1">Please try again.</p>
+        <button
+          onClick={handleRetry}
+          className="mt-4 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  const accounts = dashboardData?.accounts || [];
+
+  // Calculate total balance across Savings, Salary, Fixed Deposit (positive) and Credit Card (liability/negative)
+  const netWorthBalance = accounts.reduce((acc, account) => {
+    if (account.account_type === "Credit Card") {
+      return acc - account.balance;
+    }
+    return acc + account.balance;
+  }, 0);
+
+  // PPF, Mirae ELSS, Axis Bluechip SIP, Gold ETF (10,95,600)
+  const totalInvestments = 284500 + 142200 + 620000 + 48900;
+  const totalNetWorth = netWorthBalance + totalInvestments;
+
+  const accountsList = accounts.map((acc) => {
+    const isCreditCard = acc.account_type === "Credit Card";
+    const formattedBal = `${isCreditCard ? "− " : ""}₹${acc.balance.toLocaleString("en-IN")}`;
+
+    let trend = "+₹12,840";
+    let up = true;
+    if (acc.account_type === "Savings") {
+      trend = "+₹12,840";
+    } else if (acc.account_type === "Salary") {
+      trend = "+₹85,000";
+    } else if (acc.account_type === "Credit Card") {
+      trend = "Due 28 Jul";
+      up = false;
+    } else if (acc.account_type === "Fixed Deposit") {
+      trend = "6.8% p.a.";
+    }
+
+    return {
+      name: `${acc.account_type} — XXXX ${acc.account_number.slice(-4)}`,
+      bal: formattedBal,
+      trend,
+      up,
+    };
+  });
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -61,7 +195,9 @@ function FinancesPage() {
           <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[var(--sbi-blue)]/30 blur-3xl" />
           <div className="relative">
             <div className="text-sm text-white/80">Total Net Worth</div>
-            <div className="mt-2 text-5xl font-bold tracking-tight sm:text-6xl">₹18,76,450</div>
+            <div className="mt-2 text-5xl font-bold tracking-tight sm:text-6xl">
+              ₹{totalNetWorth.toLocaleString("en-IN")}
+            </div>
             <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium">
               <ArrowUpRight className="h-3 w-3" /> ₹1,45,230 (8.4%) vs last month
             </div>
@@ -87,23 +223,23 @@ function FinancesPage() {
           <KPI
             icon={ArrowUpRight}
             label="Income (This Month)"
-            value="₹1,85,000"
+            value={`₹${incomeThisMonth.toLocaleString("en-IN")}`}
             tone="success"
             sub="+ ₹15K vs avg"
           />
           <KPI
             icon={ArrowDownRight}
             label="Expenses"
-            value="₹82,150"
+            value={`₹${expensesThisMonth.toLocaleString("en-IN")}`}
             tone="error"
             sub="− 6% vs avg"
           />
           <KPI
             icon={Wallet}
             label="Monthly Cash Flow"
-            value="+ ₹1,02,850"
-            tone="success"
-            sub="Healthy"
+            value={`${cashFlow >= 0 ? "+" : "−"} ₹${Math.abs(cashFlow).toLocaleString("en-IN")}`}
+            tone={cashFlow >= 0 ? "success" : "error"}
+            sub={cashFlow >= 0 ? "Healthy" : "Deficit"}
           />
         </div>
       </div>
@@ -112,7 +248,7 @@ function FinancesPage() {
         <GlassCard>
           <SectionTitle icon={Landmark}>Accounts</SectionTitle>
           <div className="mt-4 divide-y divide-border">
-            {accounts.map((a) => (
+            {accountsList.map((a) => (
               <div key={a.name} className="flex items-center justify-between py-3">
                 <div>
                   <div className="text-sm font-semibold">{a.name}</div>
@@ -250,6 +386,7 @@ function KPI({
   );
 }
 
+// Reusable SectionTitle
 function SectionTitle({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2">

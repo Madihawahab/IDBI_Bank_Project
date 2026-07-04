@@ -1,20 +1,40 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Sparkles, TrendingUp, ThumbsUp, ThumbsDown, ArrowRight } from "lucide-react";
+import { Sparkles, TrendingUp, ThumbsUp, ThumbsDown, ArrowRight, AlertCircle } from "lucide-react";
 import { GlassCard } from "@/components/app-shell";
+import { useQuery } from "@tanstack/react-query";
+import { moneyMoodApi } from "@/lib/api";
+import { MoneyMood } from "../types/api";
+
+function MoneyMoodErrorFallback({ error, reset }: { error: Error; reset: () => void }) {
+  return (
+    <div className="rounded-3xl border border-red-100 bg-red-50/50 p-6 text-center">
+      <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-3" />
+      <h3 className="font-bold text-red-800">Failed to load Money Mood</h3>
+      <p className="text-sm text-red-600 mt-1">{error.message || "Please try again."}</p>
+      <button
+        onClick={reset}
+        className="mt-4 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
+      >
+        Retry
+      </button>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/_app/money-mood")({
   head: () => ({
     meta: [
-      { title: "Money Mood — SBI Life Moments AI" },
+      { title: "Money Mood — IDBI BANK Life Moments AI" },
       {
         name: "description",
         content: "Your financial wellness, felt emotionally. Today you're in Calm Mode.",
       },
-      { property: "og:title", content: "Money Mood — SBI Life Moments AI" },
+      { property: "og:title", content: "Money Mood — IDBI BANK Life Moments AI" },
       { property: "og:description", content: "Emotional wellness for your finances." },
     ],
   }),
   component: MoodPage,
+  errorComponent: (props) => <MoneyMoodErrorFallback {...props} />,
 });
 
 const days = [
@@ -28,11 +48,48 @@ const days = [
 ];
 
 function MoodPage() {
-  // big ring
+  // Query Money Mood
+  const { data, isLoading, error, refetch } = useQuery<MoneyMood>({
+    queryKey: ["money-mood"],
+    queryFn: moneyMoodApi.getMoneyMood,
+  });
+
   const size = 280;
   const r = (size - 20) / 2;
   const c = 2 * Math.PI * r;
-  const value = 84;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="h-12 w-1/3 bg-slate-200 rounded-2xl mx-auto" />
+
+        {/* Big circular wheel skeleton */}
+        <div className="h-64 w-64 bg-slate-200 rounded-full mx-auto my-6" />
+
+        {/* Graph skeleton */}
+        <div className="h-44 bg-slate-200 rounded-3xl" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-3xl border border-red-100 bg-red-50/50 p-6 text-center">
+        <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-3" />
+        <h3 className="font-bold text-red-800">Failed to load Money Mood</h3>
+        <p className="text-sm text-red-600 mt-1">Please try again.</p>
+        <button
+          onClick={() => refetch()}
+          className="mt-4 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  const value = data?.mood_score ?? 88;
   const off = c - (value / 100) * c;
 
   return (

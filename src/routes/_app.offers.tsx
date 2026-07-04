@@ -1,84 +1,168 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Home, Plane, CreditCard, Shield, Gift, ChevronDown } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Home,
+  Plane,
+  CreditCard,
+  Shield,
+  Gift,
+  ChevronDown,
+  AlertCircle,
+  type LucideIcon,
+} from "lucide-react";
 import { TrustBadge, SignalChip, ConfidenceRing, PageHeader } from "@/components/app-shell";
+
+interface MappedOffer {
+  id: string;
+  icon: LucideIcon;
+  title: string;
+  headline: string;
+  savings: string;
+  desc: string;
+  why: string;
+  signals: string[];
+  confidence: number;
+  match: string;
+  cta: string;
+  tint: string;
+}
+import { offersApi } from "@/lib/api";
+import { Offer } from "../types/api";
+
+function OffersErrorFallback({ error, reset }: { error: Error; reset: () => void }) {
+  return (
+    <div className="rounded-3xl border border-red-100 bg-red-50/50 p-6 text-center">
+      <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-3" />
+      <h3 className="font-bold text-red-800">Failed to load Offers</h3>
+      <p className="text-sm text-red-600 mt-1">{error.message || "Please try again."}</p>
+      <button
+        onClick={reset}
+        className="mt-4 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
+      >
+        Retry
+      </button>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/_app/offers")({
   head: () => ({
     meta: [
-      { title: "Offers & Rewards — SBI Life Moments AI" },
+      { title: "Offers & Rewards — IDBI BANK Life Moments AI" },
       {
         name: "description",
         content: "Benefits chosen for your life events, goals and eligibility.",
       },
-      { property: "og:title", content: "Offers & Rewards — SBI Life Moments AI" },
+      { property: "og:title", content: "Offers & Rewards — IDBI BANK Life Moments AI" },
       { property: "og:description", content: "Only offers that are relevant — never generic." },
     ],
   }),
   component: OffersPage,
+  errorComponent: (props) => <OffersErrorFallback {...props} />,
 });
 
-const offers = [
-  {
-    id: "home",
-    icon: Home,
-    title: "Pre-approved Home Loan",
-    headline: "@ 8.40% p.a.",
-    savings: "₹1,24,000",
-    desc: "vs your current rate",
-    why: "Based on your salary, credit score 812, and stable employment for 3 years.",
-    signals: ["Income stability", "Credit score 812", "Goal: Home 2026", "Low EMI burden"],
-    confidence: 92,
-    match: "92% Match",
-    cta: "View Loan",
-    tint: "from-[var(--sbi-blue)]/15 to-[var(--sbi-royal)]/10",
-  },
-  {
-    id: "travel",
-    icon: Plane,
-    title: "International Travel Card",
-    headline: "Zero forex markup",
-    savings: "₹8,400",
-    desc: "saved per ₹1L spent abroad",
-    why: "You searched flights to Europe twice and topped up forex last month.",
-    signals: ["Flight searches", "Forex top-up", "Visa fee"],
-    confidence: 84,
-    match: "84% Match",
-    cta: "Apply Now",
-    tint: "from-[var(--success)]/15 to-[var(--sbi-blue)]/10",
-  },
-  {
-    id: "card",
-    icon: CreditCard,
-    title: "SBI Cashback Card",
-    headline: "5% Cashback",
-    savings: "₹18,000",
-    desc: "annual cashback at your spend pattern",
-    why: "Your online spend is ₹30K/mo — this card pays back 5% vs current 1%.",
-    signals: ["Online spend dominant", "On-time payments", "Active shopper"],
-    confidence: 88,
-    match: "88% Match",
-    cta: "Get Card",
-    tint: "from-[var(--gold)]/15 to-[var(--warning)]/10",
-  },
-  {
-    id: "ins",
-    icon: Shield,
-    title: "Top-Up Health Cover",
-    headline: "₹15L for ₹220/mo",
-    savings: "₹2,640",
-    desc: "annual premium vs market average",
-    why: "Family floater used ₹2.4L last year — top-up adds runway at a low cost.",
-    signals: ["Recent claim", "Family floater", "Age band 30-40"],
-    confidence: 81,
-    match: "81% Match",
-    cta: "Add Cover",
-    tint: "from-[var(--sbi-blue)]/10 to-[var(--sbi-navy)]/10",
-  },
-];
+const icons: Record<string, LucideIcon> = {
+  Home,
+  Plane,
+  CreditCard,
+  Shield,
+  Gift,
+};
 
 function OffersPage() {
   const [open, setOpen] = useState<string | null>(null);
+
+  // Fetch Offers
+  const {
+    data: offersData,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery<Offer[]>({
+    queryKey: ["offers"],
+    queryFn: offersApi.getOffers,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="h-12 w-1/3 bg-slate-200 rounded-2xl" />
+
+        {/* Offers Cards Skeletons */}
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="h-48 bg-slate-200 rounded-3xl" />
+          <div className="h-48 bg-slate-200 rounded-3xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-3xl border border-red-100 bg-red-50/50 p-6 text-center">
+        <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-3" />
+        <h3 className="font-bold text-red-800">Failed to load Offers</h3>
+        <p className="text-sm text-red-600 mt-1">Please try again.</p>
+        <button
+          onClick={() => refetch()}
+          className="mt-4 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // Map API models to UI properties
+  const offers = (offersData || []).map((o: Offer): MappedOffer => {
+    let iconKey = "Gift";
+    let tint = "from-[var(--gold)]/15 to-[var(--warning)]/10";
+    const titleLower = o.title.toLowerCase();
+
+    if (titleLower.includes("home") || titleLower.includes("loan")) {
+      iconKey = "Home";
+      tint = "from-[var(--sbi-blue)]/15 to-[var(--sbi-royal)]/10";
+    } else if (titleLower.includes("travel") || titleLower.includes("forex")) {
+      iconKey = "Plane";
+      tint = "from-[var(--success)]/15 to-[var(--sbi-blue)]/10";
+    } else if (titleLower.includes("card") || titleLower.includes("cashback")) {
+      iconKey = "CreditCard";
+      tint = "from-[var(--gold)]/15 to-[var(--warning)]/10";
+    } else if (
+      titleLower.includes("insurance") ||
+      titleLower.includes("health") ||
+      titleLower.includes("cover")
+    ) {
+      iconKey = "Shield";
+      tint = "from-[var(--sbi-blue)]/10 to-[var(--sbi-navy)]/10";
+    }
+
+    // Dynamic signals simulation
+    let signals = ["Online spend", "Credit history", "Steady salary"];
+    if (iconKey === "Home") {
+      signals = ["Income stability", "Credit score 812", "Goal: Home 2026", "Low EMI burden"];
+    } else if (iconKey === "Plane") {
+      signals = ["Flight searches", "Forex top-up", "Visa fee"];
+    }
+
+    return {
+      id: String(o.id),
+      icon: icons[iconKey] || Gift,
+      title: o.title,
+      headline: o.headline,
+      savings: o.savings,
+      desc: o.description,
+      why: o.reasoning,
+      signals,
+      confidence: o.confidence_score,
+      match: `${o.confidence_score}% Match`,
+      cta: o.cta_text,
+      tint,
+    };
+  });
+
   return (
     <div>
       <PageHeader
@@ -93,62 +177,83 @@ function OffersPage() {
       />
 
       <div className="grid gap-5 sm:grid-cols-2">
-        {offers.map((o) => {
+        {offers.map((o: MappedOffer) => {
           const isOpen = open === o.id;
           return (
             <div
               key={o.id}
-              className="overflow-hidden rounded-3xl border border-border bg-white shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)]"
+              className="flex flex-col justify-between overflow-hidden rounded-3xl border border-border bg-white shadow-[var(--shadow-soft)] transition hover:shadow-[var(--shadow-card)]"
             >
-              <div className={`relative bg-gradient-to-br p-6 ${o.tint}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm">
-                        <o.icon className="h-5 w-5 text-[var(--sbi-royal)]" />
-                      </div>
-                      <h3 className="text-lg font-bold text-[var(--sbi-navy)]">{o.title}</h3>
-                    </div>
-                    <div className="mt-3 text-sm text-muted-foreground">You can save up to</div>
-                    <div className="mt-1 text-3xl font-bold text-[var(--sbi-navy)]">
-                      {o.savings}
-                    </div>
-                    <div className="text-xs text-muted-foreground">{o.desc}</div>
+              <div className="p-5">
+                <div className="flex items-start gap-4">
+                  <div
+                    className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${o.tint}`}
+                  >
+                    <o.icon className="h-7 w-7 text-[var(--sbi-royal)]" />
                   </div>
-                  <ConfidenceRing value={o.confidence} size={56} />
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="truncate font-semibold text-[var(--sbi-navy)]">{o.title}</h3>
+                      <TrustBadge />
+                    </div>
+                    <div className="mt-1 text-sm font-bold text-foreground">{o.headline}</div>
+                    <div className="mt-1.5 rounded-xl bg-muted/40 p-2.5">
+                      <div className="text-xs text-muted-foreground">Estimated savings</div>
+                      <div className="flex items-baseline gap-1 text-[var(--success)]">
+                        <span className="text-lg font-bold">{o.savings}</span>
+                        <span className="text-[10px] font-medium text-muted-foreground">
+                          {o.desc}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-3 p-5">
-                <div className="flex flex-wrap gap-2">
-                  <TrustBadge />
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--sbi-blue)]/10 px-2.5 py-1 text-[11px] font-semibold text-[var(--sbi-royal)]">
-                    <Gift className="h-3 w-3" /> {o.match}
-                  </span>
+                <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+                  <button
+                    onClick={() => setOpen(isOpen ? null : o.id)}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--sbi-blue)]"
+                  >
+                    {isOpen ? "Hide details" : "Why am I seeing this?"}
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 transition ${isOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  <span className="text-xs font-bold text-[var(--sbi-royal)]">{o.match}</span>
                 </div>
-
-                <div className="text-sm font-semibold text-foreground">{o.headline}</div>
-
-                <button
-                  onClick={() => setOpen(isOpen ? null : o.id)}
-                  className="flex items-center gap-1 text-xs font-semibold text-[var(--sbi-blue)]"
-                >
-                  {isOpen ? "Hide why" : "Why this offer?"}
-                  <ChevronDown className={`h-3 w-3 transition ${isOpen ? "rotate-180" : ""}`} />
-                </button>
 
                 {isOpen && (
-                  <div className="space-y-2 rounded-2xl bg-[var(--sbi-sky)] p-3 text-sm">
-                    <p className="text-foreground/80">{o.why}</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {o.signals.map((s) => (
-                        <SignalChip key={s}>{s}</SignalChip>
-                      ))}
+                  <div className="mt-4 space-y-4 border-t border-border pt-4 text-xs">
+                    <div>
+                      <div className="font-semibold text-[var(--sbi-navy)]">The Recommendation</div>
+                      <p className="mt-1 leading-relaxed text-muted-foreground">{o.why}</p>
+                    </div>
+
+                    <div>
+                      <div className="mb-1.5 font-semibold text-[var(--sbi-navy)]">
+                        Signals Used
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {o.signals.map((s: string) => (
+                          <SignalChip key={s}>{s}</SignalChip>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-[var(--sbi-navy)]">Match Confidence</span>
+                      <ConfidenceRing value={o.confidence} size={32} />
                     </div>
                   </div>
                 )}
+              </div>
 
-                <button className="w-full rounded-full bg-[var(--sbi-blue)] py-2.5 text-sm font-semibold text-white shadow-[0_6px_18px_-6px_rgba(0,173,239,0.6)] transition hover:opacity-95">
+              <div className="bg-slate-50/50 p-4 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                  Pre-approved
+                </span>
+                <button className="rounded-full bg-[var(--sbi-blue)] px-4 py-1.5 text-xs font-semibold text-white shadow-[0_4px_12px_-4px_rgba(0,173,239,0.5)] hover:opacity-95">
                   {o.cta}
                 </button>
               </div>

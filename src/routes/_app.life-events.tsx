@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Plus,
   Home,
@@ -10,18 +11,53 @@ import {
   Car,
   ChevronDown,
   Sparkles,
+  AlertCircle,
+  type LucideIcon,
 } from "lucide-react";
+
+interface MappedLifeEvent {
+  id: string;
+  icon: LucideIcon;
+  title: string;
+  when: string;
+  confidence: number;
+  readiness: number;
+  summary: string;
+  signals: string[];
+  reasoning: string;
+  alternatives: string;
+  future: string;
+  tint: string;
+}
 import { ConfidenceRing, TrustBadge, SignalChip, PageHeader } from "@/components/app-shell";
+import { lifeEventsApi } from "@/lib/api";
+import { LifeEvent } from "../types/api";
+
+function LifeEventsErrorFallback({ error, reset }: { error: Error; reset: () => void }) {
+  return (
+    <div className="rounded-3xl border border-red-100 bg-red-50/50 p-6 text-center">
+      <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-3" />
+      <h3 className="font-bold text-red-800">Failed to load Life Events</h3>
+      <p className="text-sm text-red-600 mt-1">{error.message || "Please try again."}</p>
+      <button
+        onClick={reset}
+        className="mt-4 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
+      >
+        Retry
+      </button>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/_app/life-events")({
   head: () => ({
     meta: [
-      { title: "Life Events — SBI Life Moments AI" },
+      { title: "Life Events — IDBI BANK Life Moments AI" },
       {
         name: "description",
         content: "AI predicts the life events ahead so you can prepare with confidence.",
       },
-      { property: "og:title", content: "Life Events — SBI Life Moments AI" },
+      { property: "og:title", content: "Life Events — IDBI BANK Life Moments AI" },
       {
         property: "og:description",
         content: "Predicted life events with confidence, signals, and readiness.",
@@ -29,99 +65,132 @@ export const Route = createFileRoute("/_app/life-events")({
     ],
   }),
   component: LifeEventsPage,
+  errorComponent: (props) => <LifeEventsErrorFallback {...props} />,
 });
 
-const events = [
-  {
-    id: "home",
-    icon: Home,
-    title: "Home Purchase",
-    when: "Mar 2026",
-    confidence: 92,
-    readiness: 73,
-    summary: "Based on your savings & spending pattern",
-    signals: [
-      "Rising SIP contributions",
-      "Property search browsing",
-      "Increased savings velocity",
-      "Mortgage rate research",
-    ],
-    reasoning:
-      "You've consistently increased your SIP for 6 months and added ₹2.4L to your home goal account. Your stable income and low debt-to-income ratio support readiness by Q1 2026.",
-    alternatives:
-      "You could rent for 18 more months and invest the down payment for higher returns, or buy now with a higher EMI but lock current rates.",
-    future: "If you maintain pace, projected down payment ₹12L by Mar 2026 — 87% of target.",
-    tint: "from-[var(--sbi-blue)]/15 to-[var(--sbi-royal)]/10",
-  },
-  {
-    id: "edu",
-    icon: GraduationCap,
-    title: "Higher Education",
-    when: "Aug 2027",
-    confidence: 78,
-    readiness: 54,
-    summary: "Building your child's future",
-    signals: [
-      "School fee escalation",
-      "Education insurance enquiry",
-      "Sukanya deposits",
-      "Coaching expenses",
-    ],
-    reasoning:
-      "Recurring school payments and increasing tuition costs combined with your Sukanya Samriddhi pattern suggest a higher-education milestone in ~3 years.",
-    alternatives:
-      "Switch a portion of equity SIP into a dedicated child education plan, or take an education loan at the time and continue current investments.",
-    future: "Education corpus could reach ₹18L by Aug 2027 with a ₹4,000 monthly top-up.",
-    tint: "from-[var(--gold)]/15 to-[var(--warning)]/10",
-  },
-  {
-    id: "vacay",
-    icon: Plane,
-    title: "International Vacation",
-    when: "Dec 2025",
-    confidence: 66,
-    readiness: 48,
-    summary: "Goa or Europe? You're getting there!",
-    signals: [
-      "Flight searches",
-      "Forex card top-up",
-      "Visa fee payment",
-      "Travel insurance browsing",
-    ],
-    reasoning:
-      "Repeated travel research and your December bonus cycle indicate a year-end international trip.",
-    alternatives:
-      "Domestic luxury escape (Andamans/Ladakh) at 40% the cost, or split trip across two short weekends.",
-    future: "A ₹15,000 monthly travel SIP gets you to ₹2.1L by Nov 2025 — fully funded.",
-    tint: "from-[var(--success)]/15 to-[var(--sbi-blue)]/10",
-  },
-  {
-    id: "car",
-    icon: Car,
-    title: "Car Upgrade",
-    when: "Jul 2026",
-    confidence: 71,
-    readiness: 61,
-    summary: "Time for an SUV?",
-    signals: [
-      "Service costs rising",
-      "Test drive bookings",
-      "Auto loan calculator visits",
-      "Insurance renewal soon",
-    ],
-    reasoning:
-      "Your current car is 7 years old with rising service expense — replacement window opens mid-2026.",
-    alternatives: "Pre-owned premium car at 60% cost, or extend current car's warranty by 2 years.",
-    future: "Down payment of ₹4L feasible with a ₹12,000 monthly auto-fund SIP.",
-    tint: "from-[var(--sbi-royal)]/15 to-[var(--sbi-navy)]/10",
-  },
-];
+const icons: Record<string, LucideIcon> = {
+  Home,
+  GraduationCap,
+  Plane,
+  Heart,
+  Baby,
+  Car,
+};
 
 const filters = ["All Events", "Upcoming", "On Track", "Completed"];
 
 function LifeEventsPage() {
   const [filter, setFilter] = useState("Upcoming");
-  const [open, setOpen] = useState<string | null>("home");
+  const [open, setOpen] = useState<string | null>("1"); // Set home/first event open by default
+
+  // Fetch Predicted Life Events
+  const {
+    data: eventsData,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery<LifeEvent[]>({
+    queryKey: ["life-events"],
+    queryFn: lifeEventsApi.getLifeEvents,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="h-12 w-1/3 bg-slate-200 rounded-2xl" />
+
+        {/* Events Cards Skeletons */}
+        <div className="space-y-4">
+          <div className="h-44 bg-slate-200 rounded-3xl" />
+          <div className="h-44 bg-slate-200 rounded-3xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-3xl border border-red-100 bg-red-50/50 p-6 text-center">
+        <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-3" />
+        <h3 className="font-bold text-red-800">Failed to load Life Events</h3>
+        <p className="text-sm text-red-600 mt-1">Please try again.</p>
+        <button
+          onClick={() => refetch()}
+          className="mt-4 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // Map API models to UI properties
+  const events = (eventsData || []).map((e: LifeEvent): MappedLifeEvent => {
+    let iconKey = "Heart";
+    let tint = "from-[var(--success)]/15 to-[var(--sbi-blue)]/10";
+    const titleLower = e.title.toLowerCase();
+
+    if (titleLower.includes("home") || titleLower.includes("purchase")) {
+      iconKey = "Home";
+      tint = "from-[var(--sbi-blue)]/15 to-[var(--sbi-royal)]/10";
+    } else if (
+      titleLower.includes("education") ||
+      titleLower.includes("school") ||
+      titleLower.includes("college")
+    ) {
+      iconKey = "GraduationCap";
+      tint = "from-[var(--gold)]/15 to-[var(--warning)]/10";
+    } else if (
+      titleLower.includes("trip") ||
+      titleLower.includes("vacation") ||
+      titleLower.includes("travel")
+    ) {
+      iconKey = "Plane";
+      tint = "from-[var(--success)]/15 to-[var(--sbi-blue)]/10";
+    } else if (titleLower.includes("car")) {
+      iconKey = "Car";
+      tint = "from-[var(--sbi-royal)]/15 to-[var(--sbi-navy)]/10";
+    } else if (titleLower.includes("wedding") || titleLower.includes("marriage")) {
+      iconKey = "Heart";
+      tint = "from-pink-500/15 to-purple-500/10";
+    }
+
+    // Dynamic signals simulation
+    let signals = ["Income stable", "Budget surplus", "Target allocation"];
+    if (iconKey === "Home") {
+      signals = [
+        "Rising SIP contributions",
+        "Property search browsing",
+        "Savings velocity",
+        "Mortgage rate research",
+      ];
+    } else if (iconKey === "GraduationCap") {
+      signals = [
+        "School fee escalation",
+        "Education insurance enquiry",
+        "Sukanya deposits",
+        "Coaching expenses",
+      ];
+    }
+
+    return {
+      id: String(e.id),
+      icon: icons[iconKey] || Heart,
+      title: e.title,
+      when: e.prediction_date,
+      confidence: e.confidence,
+      readiness: e.readiness_score,
+      summary: e.explanation
+        ? e.explanation.split(".")[0]
+        : "Based on your spending & savings trends.",
+      signals,
+      reasoning: e.explanation,
+      alternatives: e.alternative_options || "Invest in tax-saving ELSS schemes.",
+      future: e.future_projection || "You are on track to meet this goal comfortably.",
+      tint,
+    };
+  });
 
   return (
     <div>
@@ -153,7 +222,7 @@ function LifeEventsPage() {
       </div>
 
       <div className="space-y-4">
-        {events.map((e) => {
+        {events.map((e: MappedLifeEvent) => {
           const isOpen = open === e.id;
           return (
             <div
@@ -219,7 +288,7 @@ function LifeEventsPage() {
                         Observed Signals
                       </div>
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        {e.signals.map((s) => (
+                        {e.signals.map((s: string) => (
                           <SignalChip key={s}>{s}</SignalChip>
                         ))}
                       </div>
