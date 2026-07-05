@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 class UserRegister(BaseModel):
     name: str
@@ -86,6 +86,134 @@ class LifeEventOut(BaseModel):
     class Config:
         from_attributes = True
 
+class DecisionReplayStep(BaseModel):
+    step: str
+    timestamp: str
+    explanation: str
+
+    class Config:
+        from_attributes = True
+
+class WhyNotOption(BaseModel):
+    recommendation: str
+    score: int
+    benefit: str
+    risk: str
+    decision: str
+
+    class Config:
+        from_attributes = True
+
+class DeliberationAgent(BaseModel):
+    agent: str
+    decision: str
+    reason: str
+    status: str
+
+    class Config:
+        from_attributes = True
+
+class DeliberationBoard(BaseModel):
+    agents: List[DeliberationAgent]
+    consensus: str
+
+    class Config:
+        from_attributes = True
+
+class CounterfactualScenario(BaseModel):
+    scenario: str
+    wealth: str
+    goal_time: str
+    risk: str
+    selected: bool
+
+    class Config:
+        from_attributes = True
+
+class ImpactMetricsOut(BaseModel):
+    savings: str
+    savings_progress: int
+    goal_acceleration: str
+    acceleration_progress: int
+    risk_reduction: str
+    risk_progress: int
+    expected_wealth_growth: str
+    wealth_progress: int
+
+    class Config:
+        from_attributes = True
+
+class ConfidenceBreakdownOut(BaseModel):
+    income_stability: int
+    savings_behaviour: int
+    debt_capacity: int
+    goal_alignment: int
+    market_conditions: int
+
+    class Config:
+        from_attributes = True
+
+class EvidenceCategoryOut(BaseModel):
+    category: str
+    signals: List[str]
+
+    class Config:
+        from_attributes = True
+
+class TrustEvolutionOut(BaseModel):
+    before: int
+    after: int
+    change: str
+    reason: str
+
+    class Config:
+        from_attributes = True
+
+class RecommendationScorecardOut(BaseModel):
+    customer_benefit: int
+    transparency: int
+    financial_risk: str
+    confidence: int
+    affordability: int
+
+    class Config:
+        from_attributes = True
+
+class DecisionIdentityOut(BaseModel):
+    decision_id: str
+    timestamp: str
+    model: str
+    status: str
+
+    class Config:
+        from_attributes = True
+
+class CustomerBenefitTestOut(BaseModel):
+    prioritized: bool
+    transparent: bool
+    compliant: bool
+    lower_risk: bool
+    wealth_optimized: bool
+
+    class Config:
+        from_attributes = True
+
+class ExplainabilityOut(BaseModel):
+    decision_replay: List[DecisionReplayStep]
+    why_not: List[WhyNotOption]
+    agent_deliberation: DeliberationBoard
+    counterfactuals: List[CounterfactualScenario]
+    impact_metrics: ImpactMetricsOut
+    confidence_breakdown: ConfidenceBreakdownOut
+    evidence_used: List[EvidenceCategoryOut]
+    trust_evolution: TrustEvolutionOut
+    scorecard: RecommendationScorecardOut
+    identity: DecisionIdentityOut
+    benefit_test: CustomerBenefitTestOut
+
+    class Config:
+        from_attributes = True
+
 class AIRecommendationOut(BaseModel):
     id: int
     title: str
@@ -95,6 +223,17 @@ class AIRecommendationOut(BaseModel):
     impact: Optional[str]
     confidence_score: int
     timestamp: datetime
+    
+    # Advanced explainability fields
+    decision_replay: Optional[Dict] = None
+    financial_signals: Optional[List[str]] = None
+    analysis_steps: Optional[List[str]] = None
+    alternatives_considered: Optional[List[str]] = None
+    selected_reason: Optional[str] = None
+    agent_deliberation: Optional[List[Dict]] = None
+    counterfactuals: Optional[List[Dict]] = None
+    impact_metrics: Optional[Dict] = None
+    explainability: Optional[ExplainabilityOut] = None
 
     class Config:
         from_attributes = True

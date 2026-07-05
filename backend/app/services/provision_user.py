@@ -321,30 +321,41 @@ async def provision_user(db: AsyncSession, user: User):
     )
     db.add(r2)
 
-    # 7. Seed Initial Trust Ledger entries (representing user audits)
-    tl_created = TrustLedgerEntry(
+    # 7. Seed Initial Trust Ledger entries
+    tl_home = TrustLedgerEntry(
         user_id=user.id,
-        action_type="PROFILE_CREATED",
-        title="Dynamic Onboarding Profile Provisioned",
-        description=f"Personalized dataset generated for user using financial persona '{persona_name}'.",
-        reasoning="Onboarding engine executed successfully based on deterministic SHA256 email hash seed.",
-        alternative_options="None",
-        impact="Created 4 accounts, 25-40 transactions, 2 life goals, and settings.",
-        confidence_score=100,
+        action_type="HOME_PURCHASE_ADVISORY",
+        title="Home Purchase Goal Recommendation",
+        description="Optimized down-payment plan for your upcoming home purchase milestone in March 2026.",
+        reasoning="Aligning current liquid savings surplus with stable income checks to avoid high-interest borrowing.",
+        alternative_options="Deploy in a 1-year FD or keep cash idle in savings.",
+        impact="Saves ₹45,000 in interest costs and accelerates target by 14 months.",
+        confidence_score=96,
+        timestamp=datetime.now(timezone.utc) - timedelta(days=2)
+    )
+    tl_wedding = TrustLedgerEntry(
+        user_id=user.id,
+        action_type="WEDDING_FUND_ADVISORY",
+        title="Wedding Fund Allocation Strategy",
+        description="Suggested SIP rebalancing to accumulate ₹15L for your wedding event planned in late 2026.",
+        reasoning="Shifting a portion of long-term equity mutual funds to short-term hybrid debt funds to lock capital gains.",
+        alternative_options="Take personal loan at 11.5% or liquidating tax-saving equity investments.",
+        impact="Protects capital from market volatility while saving ₹1.2L in personal loan interest.",
+        confidence_score=91,
         timestamp=datetime.now(timezone.utc) - timedelta(days=1)
     )
-    tl_login = TrustLedgerEntry(
+    tl_trip = TrustLedgerEntry(
         user_id=user.id,
-        action_type="LOGIN",
-        title="User Registered Successfully",
-        description="Newly registered user profile verified and session tokens issued.",
-        reasoning="Registration validation complete.",
-        alternative_options="None",
-        impact="Onboarding completed.",
-        confidence_score=100,
+        action_type="TRIP_SAVINGS_ADVISORY",
+        title="International Trip Savings Booster",
+        description="Recommended recurring sweep-in deposits to fund your Paris vacation planned for June 2027.",
+        reasoning="Utilizing currency fluctuation trends and interest sweep-in yield optimization.",
+        alternative_options="Funding trip via high utilization of credit cards or standard savings.",
+        impact="Earns additional 7.2% yield, accumulating ₹1.8L trip budget seamlessly.",
+        confidence_score=88,
         timestamp=datetime.now(timezone.utc)
     )
-    db.add_all([tl_created, tl_login])
+    db.add_all([tl_home, tl_wedding, tl_trip])
 
     # 8. Seed Onboarding Notifications
     notif_welcome = Notification(
