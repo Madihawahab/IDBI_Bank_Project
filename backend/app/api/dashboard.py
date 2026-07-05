@@ -20,8 +20,19 @@ async def get_dashboard(
     result = await db.execute(select(Account).filter_by(user_id=current_user.id))
     accounts = result.scalars().all()
     
-    # 2. Total Balance
-    total_balance = sum(acc.balance for acc in accounts)
+    # 2. Total Balance (dynamically computed via FinancialAnalyticsCalculator)
+    import hashlib
+    seed_source = f"{current_user.id}-{current_user.email.lower()}"
+    seed_int = int(hashlib.sha256(seed_source.encode()).hexdigest(), 16) % (10**8)
+    from app.services.personas import PERSONAS
+    persona_keys = list(PERSONAS.keys())
+    persona_name = persona_keys[seed_int % len(persona_keys)]
+    if current_user.email.lower() == "aarav.sharma@idbi.co.in":
+        persona_name = "Experienced Salaried Employee"
+        
+    from app.services.financial_analytics import FinancialAnalyticsCalculator
+    analytics = FinancialAnalyticsCalculator.compute_all_metrics(accounts, [], persona_name)
+    total_balance = analytics["total_balance"]
     
     # 3. Recent Transactions (sender or receiver is the current user)
     # Since our mock user has name "Aarav Sharma", we also show transactions where sender_name or receiver_name matches

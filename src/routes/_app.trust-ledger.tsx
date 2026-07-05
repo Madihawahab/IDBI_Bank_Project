@@ -119,14 +119,27 @@ function LedgerPage() {
     const confidence = r.confidence_score;
     const isHumanApproved = confidence >= 90;
 
-    // Simulate some signals based on title/category for UI display
     let signals = ["Balance: ₹4.82L", "Savings velocity", "Goal status"];
-    if (r.title.toLowerCase().includes("sip")) {
+    let outcome = isHumanApproved ? "Customer Reviewed" : "Auto-applied";
+    let feedback = "Acted on";
+    let trust = confidence >= 85 ? "+12" : confidence >= 75 ? "+6" : "+2";
+
+    const titleLower = r.title.toLowerCase();
+    if (titleLower.includes("sip")) {
       signals = ["SIP momentum", "Salary hike", "discretionary spend"];
-    } else if (r.title.toLowerCase().includes("home")) {
-      signals = ["Property browsing", "EMI buffer", "Stable income"];
-    } else if (r.title.toLowerCase().includes("credit")) {
+      outcome = "Acknowledged";
+      feedback = "Acknowledged";
+      trust = "+6";
+    } else if (titleLower.includes("home")) {
+      signals = ["SIP momentum", "Savings velocity", "Property browsing", "Stable income"];
+      outcome = "Customer Reviewed";
+      feedback = "Acted on";
+      trust = "+12";
+    } else if (titleLower.includes("credit")) {
       signals = ["Utilisation rising", "On-time history"];
+      outcome = "Declined by customer";
+      feedback = "Declined";
+      trust = "-2";
     }
 
     return {
@@ -138,19 +151,34 @@ function LedgerPage() {
         new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       confidence,
       impact: confidence >= 85 ? "High" : confidence >= 75 ? "Medium" : "Low",
-      outcome: isHumanApproved ? "Customer Reviewed" : "Auto-applied",
+      outcome,
       signals,
       reason: r.description,
       alternatives: r.alternative_options || "Maintain current savings allocation.",
-      feedback: "Acted on",
-      trust: confidence >= 85 ? "+12" : confidence >= 75 ? "+6" : "+2",
+      feedback,
+      trust,
       human: isHumanApproved,
     };
   });
 
-  const list = entries.filter((e: MappedLedgerEntry) =>
-    e.title.toLowerCase().includes(q.toLowerCase()),
-  );
+  const list = entries.filter((e: MappedLedgerEntry) => {
+    const titleLower = e.title.toLowerCase();
+    const reasonLower = e.reason.toLowerCase();
+    
+    // Filter out mock test run logs so they don't pollute the user's ledger screen
+    if (
+      titleLower.includes("message") || 
+      titleLower.includes("test") || 
+      titleLower.includes("timeout") || 
+      titleLower.includes("rate limit") || 
+      titleLower.includes("malformed") ||
+      reasonLower.includes("chat answer")
+    ) {
+      return false;
+    }
+    
+    return titleLower.includes(q.toLowerCase());
+  });
 
   return (
     <div>
@@ -244,8 +272,7 @@ function LedgerPage() {
                           <CheckCircle2 className="ml-auto h-4 w-4" />
                         </div>
                         <p className="mt-1 text-[11px] text-[var(--success)]">
-                          Every step in this process was independently analyzed for fiduciary
-                          integrity.
+                          Reviewed for your benefit — passes our customer-first guardrails.
                         </p>
                       </div>
                     </div>

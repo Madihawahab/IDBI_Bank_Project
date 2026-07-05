@@ -14,8 +14,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { PageHeader, GlassCard } from "@/components/app-shell";
-import { dashboardApi, transactionsApi } from "@/lib/api";
-import { DashboardData, Transaction } from "../types/api";
+import { dashboardApi, transactionsApi, lifeEventsApi, authApi } from "@/lib/api";
+import { DashboardData, Transaction, LifeEvent } from "../types/api";
 
 export const Route = createFileRoute("/_app/finances")({
   head: () => ({
@@ -42,6 +42,18 @@ const investments = [
 const bars = [60, 75, 45, 90, 70, 85, 55, 95, 65, 80, 72, 88];
 
 function FinancesPage() {
+  // Fetch Current User
+  const { data: userProfile, isLoading: isUserLoading } = useQuery({
+    queryKey: ["userMe"],
+    queryFn: authApi.getMe,
+  });
+
+  // Fetch Life Events
+  const { data: lifeEvents, isLoading: isLifeLoading } = useQuery<LifeEvent[]>({
+    queryKey: ["life-events"],
+    queryFn: lifeEventsApi.getLifeEvents,
+  });
+
   // Fetch Dashboard Data
   const {
     data: dashboardData,
@@ -69,8 +81,97 @@ function FinancesPage() {
     refetchTx();
   };
 
+  // 1. Core Accounts List Extraction
+  const accounts = useMemo(() => dashboardData?.accounts || [], [dashboardData]);
+
+  // 2. Net Worth Balance Calculation
+  const netWorthBalance = useMemo(() => {
+    return accounts.reduce((acc, account) => {
+      if (account.account_type === "Credit Card") {
+        return acc - account.balance;
+      }
+      return acc + account.balance;
+    }, 0);
+  }, [accounts]);
+
+  // 3. Dynamic Investments Calculations
+  const dynamicInvestments = useMemo(() => {
+    if (!transactionsList || !userProfile) return [];
+    
+    const groups: Record<string, number> = {};
+    transactionsList.forEach((t) => {
+      if (t.category === "Investment" && t.receiver_name) {
+        groups[t.receiver_name] = (groups[t.receiver_name] || 0) + t.amount;
+      }
+    });
+    
+    const seed = userProfile ? userProfile.id : 1;
+    const isAarav = userProfile?.email?.toLowerCase() === "aarav.sharma@idbi.co.in";
+    
+    const baseAmounts: Record<string, number> = {
+      "Axis Bluechip SIP": isAarav ? 284500 : (100000 + (seed % 7) * 25000),
+      "Mirae ELSS": isAarav ? 142200 : (50000 + (seed % 5) * 15000),
+      "PPF": isAarav ? 620000 : (200000 + (seed % 9) * 50000),
+      "Gold ETF": isAarav ? 48900 : (20000 + (seed % 3) * 10000),
+    };
+    
+    return Object.entries(baseAmounts).map(([name, base]) => {
+      const txSum = groups[name] || 0;
+      const total = base + txSum;
+      let change = "+8.5%";
+      if (name.includes("Axis")) change = "+12.4%";
+      if (name.includes("Mirae")) change = "+8.7%";
+      if (name.includes("PPF")) change = "+7.1%";
+      if (name.includes("Gold")) change = "+15.2%";
+      
+      return {
+        name,
+        amt: `₹${total.toLocaleString("en-IN")}`,
+        val: total,
+        change,
+      };
+    });
+  }, [transactionsList, userProfile]);
+
+  // 4. Total Investments
+  const totalInvestments = useMemo(() => {
+    return dynamicInvestments.reduce((sum, inv) => sum + inv.val, 0);
+  }, [dynamicInvestments]);
+
+  // 5. Total Net Worth
+  const totalNetWorth = netWorthBalance + totalInvestments;
+
+  // 6. Accounts List formatted
+  const accountsList = useMemo(() => {
+    return accounts.map((acc) => {
+      const isCreditCard = acc.account_type === "Credit Card";
+      const formattedBal = `${isCreditCard ? "− " : ""}₹${acc.balance.toLocaleString("en-IN")}`;
+
+      let trend = "+₹12,840";
+      let up = true;
+      if (acc.account_type === "Savings") {
+        trend = "+₹12,840";
+      } else if (acc.account_type === "Salary") {
+        trend = "+₹85,000";
+      } else if (acc.account_type === "Credit Card") {
+        trend = "Due 28 Jul";
+        up = false;
+      } else if (acc.account_type === "Fixed Deposit") {
+        trend = "6.8% p.a.";
+      }
+
+      return {
+        name: `${acc.account_type} — XXXX ${acc.account_number.slice(-4)}`,
+        bal: formattedBal,
+        trend,
+        up,
+      };
+    });
+  }, [accounts]);
+
+  // 7. Income / Expenses Monthly
   const { incomeThisMonth, expensesThisMonth } = useMemo(() => {
-    if (!transactionsList) return { incomeThisMonth: 185000, expensesThisMonth: 82150 };
+    if (!transactionsList || !userProfile) return { incomeThisMonth: 185000, expensesThisMonth: 82150 };
 
     let inc = 0;
     let exp = 0;
@@ -82,7 +183,7 @@ function FinancesPage() {
     transactionsList.forEach((t) => {
       const txDate = new Date(t.timestamp);
       if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
-        if (t.receiver_name === "Aarav Sharma") {
+        if (t.receiver_name === userProfile.name) {
           inc += t.amount;
         } else {
           exp += t.amount;
@@ -94,11 +195,71 @@ function FinancesPage() {
       incomeThisMonth: inc > 0 ? inc : 185000,
       expensesThisMonth: exp > 0 ? exp : 82150,
     };
-  }, [transactionsList]);
+  }, [transactionsList, userProfile]);
 
+  // 8. Cash Flow
   const cashFlow = incomeThisMonth - expensesThisMonth;
 
-  if (isDashLoading || isTxLoading) {
+  // 9. Bills & EMIs
+  const dynamicBills = useMemo(() => {
+    const ccAccount = accounts.find(acc => acc.account_type === "Credit Card");
+    const ccAmt = ccAccount ? ccAccount.balance : 18420;
+    
+    let elecAmt = 2140;
+    if (transactionsList) {
+      const elecTx = transactionsList.find(t => 
+        t.category === "Utilities" && 
+        (t.receiver_name?.toLowerCase().includes("electricity") || t.receiver_name?.toLowerCase().includes("bescom"))
+      );
+      if (elecTx) elecAmt = elecTx.amount;
+    }
+    
+    const seed = userProfile ? userProfile.id : 1;
+    const isAarav = userProfile?.email?.toLowerCase() === "aarav.sharma@idbi.co.in";
+    const homeLoanAmt = isAarav ? 42800 : (30000 + (seed % 5) * 4000);
+    
+    return [
+      { n: "Credit Card", a: `₹${ccAmt.toLocaleString("en-IN")}`, d: "28 Jul" },
+      { n: "Home Loan EMI", a: `₹${homeLoanAmt.toLocaleString("en-IN")}`, d: "5 Aug" },
+      { n: "Electricity", a: `₹${elecAmt.toLocaleString("en-IN")}`, d: "12 Aug" },
+    ];
+  }, [accounts, transactionsList, userProfile]);
+
+  // 10. Insurance
+  const dynamicInsurance = useMemo(() => {
+    const seed = userProfile ? userProfile.id : 1;
+    const isAarav = userProfile?.email?.toLowerCase() === "aarav.sharma@idbi.co.in";
+    
+    const termLifeCover = isAarav ? 1.0 : (1.0 + (seed % 3) * 0.5); // 1 Cr, 1.5 Cr, 2 Cr
+    const healthCover = isAarav ? 10 : (5 + (seed % 4) * 5); // 5L, 10L, 15L, 20L
+    
+    return [
+      { n: "Term Life", a: `₹${termLifeCover} Cr`, s: "Active" },
+      { n: "Health Family", a: `₹${healthCover}L`, s: "Active" },
+      { n: "Car", a: "Comprehensive", s: "Renew Sep" },
+    ];
+  }, [userProfile]);
+
+  // 11. Goals
+  const dynamicGoals = useMemo(() => {
+    const homeEvent = lifeEvents?.find(e => e.title?.toLowerCase().includes("home") || e.title?.toLowerCase().includes("villa") || e.title?.toLowerCase().includes("purchase"));
+    const homeConfidence = homeEvent ? homeEvent.confidence : 73;
+    
+    const eduEvent = lifeEvents?.find(e => e.title?.toLowerCase().includes("education") || e.title?.toLowerCase().includes("trip") || e.title?.toLowerCase().includes("vacation"));
+    const eduConfidence = eduEvent ? eduEvent.confidence : 48;
+    
+    const savingsAccount = accounts.find(acc => acc.account_type === "Savings");
+    const savingsBal = savingsAccount ? savingsAccount.balance : 300000;
+    const emergencyProgress = Math.min(100, Math.round((savingsBal / 400000) * 100));
+    
+    return [
+      { g: "Home Down Payment", p: homeConfidence },
+      { g: "Emergency Fund", p: emergencyProgress },
+      { g: "Europe Trip", p: eduConfidence },
+    ];
+  }, [lifeEvents, accounts]);
+
+  if (isDashLoading || isTxLoading || isUserLoading || isLifeLoading) {
     return (
       <div className="space-y-6 animate-pulse">
         {/* Header Skeleton */}
@@ -138,45 +299,6 @@ function FinancesPage() {
       </div>
     );
   }
-
-  const accounts = dashboardData?.accounts || [];
-
-  // Calculate total balance across Savings, Salary, Fixed Deposit (positive) and Credit Card (liability/negative)
-  const netWorthBalance = accounts.reduce((acc, account) => {
-    if (account.account_type === "Credit Card") {
-      return acc - account.balance;
-    }
-    return acc + account.balance;
-  }, 0);
-
-  // PPF, Mirae ELSS, Axis Bluechip SIP, Gold ETF (10,95,600)
-  const totalInvestments = 284500 + 142200 + 620000 + 48900;
-  const totalNetWorth = netWorthBalance + totalInvestments;
-
-  const accountsList = accounts.map((acc) => {
-    const isCreditCard = acc.account_type === "Credit Card";
-    const formattedBal = `${isCreditCard ? "− " : ""}₹${acc.balance.toLocaleString("en-IN")}`;
-
-    let trend = "+₹12,840";
-    let up = true;
-    if (acc.account_type === "Savings") {
-      trend = "+₹12,840";
-    } else if (acc.account_type === "Salary") {
-      trend = "+₹85,000";
-    } else if (acc.account_type === "Credit Card") {
-      trend = "Due 28 Jul";
-      up = false;
-    } else if (acc.account_type === "Fixed Deposit") {
-      trend = "6.8% p.a.";
-    }
-
-    return {
-      name: `${acc.account_type} — XXXX ${acc.account_number.slice(-4)}`,
-      bal: formattedBal,
-      trend,
-      up,
-    };
-  });
 
   return (
     <div className="space-y-6">
@@ -267,7 +389,7 @@ function FinancesPage() {
         <GlassCard>
           <SectionTitle icon={TrendingUp}>Investments</SectionTitle>
           <div className="mt-4 grid grid-cols-2 gap-3">
-            {investments.map((i) => (
+            {dynamicInvestments.map((i) => (
               <div key={i.name} className="rounded-2xl border border-border bg-muted/30 p-4">
                 <div className="text-xs text-muted-foreground">{i.name}</div>
                 <div className="mt-1 text-lg font-bold text-[var(--sbi-navy)]">{i.amt}</div>
@@ -284,11 +406,7 @@ function FinancesPage() {
         <GlassCard>
           <SectionTitle icon={Receipt}>Bills & EMIs</SectionTitle>
           <div className="mt-4 space-y-3">
-            {[
-              { n: "Credit Card", a: "₹18,420", d: "28 Jul" },
-              { n: "Home Loan EMI", a: "₹42,800", d: "5 Aug" },
-              { n: "Electricity", a: "₹2,140", d: "12 Aug" },
-            ].map((b) => (
+            {dynamicBills.map((b) => (
               <div
                 key={b.n}
                 className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2.5"
@@ -306,11 +424,7 @@ function FinancesPage() {
         <GlassCard>
           <SectionTitle icon={Shield}>Insurance</SectionTitle>
           <div className="mt-4 space-y-3">
-            {[
-              { n: "Term Life", a: "₹1 Cr", s: "Active" },
-              { n: "Health Family", a: "₹10L", s: "Active" },
-              { n: "Car", a: "Comprehensive", s: "Renew Sep" },
-            ].map((b) => (
+            {dynamicInsurance.map((b) => (
               <div
                 key={b.n}
                 className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2.5"
@@ -328,11 +442,7 @@ function FinancesPage() {
         <GlassCard>
           <SectionTitle icon={Target}>Goals</SectionTitle>
           <div className="mt-4 space-y-4">
-            {[
-              { g: "Home Down Payment", p: 73 },
-              { g: "Emergency Fund", p: 92 },
-              { g: "Europe Trip", p: 48 },
-            ].map((g) => (
+            {dynamicGoals.map((g) => (
               <div key={g.g}>
                 <div className="flex justify-between text-sm">
                   <span className="font-medium">{g.g}</span>

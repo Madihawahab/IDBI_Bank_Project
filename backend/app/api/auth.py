@@ -42,25 +42,9 @@ async def register(user_in: UserRegister, db: AsyncSession = Depends(get_db)):
     db.add(user)
     await db.flush() # get user id
     
-    # Create default account
-    # Generate unique account number
-    account_number = "".join([str(random.randint(0, 9)) for _ in range(10)])
-    account = Account(
-        user_id=user.id,
-        account_number=account_number,
-        balance=0.0,
-        account_type="Savings"
-    )
-    db.add(account)
-    
-    # Create default settings
-    settings = Setting(
-        user_id=user.id,
-        language="English",
-        notifications_enabled=True,
-        biometrics_enabled=False
-    )
-    db.add(settings)
+    # Call the centralized provisioning service to generate deterministic persona profile
+    from app.services.provision_user import provision_user
+    await provision_user(db, user)
     
     await db.commit()
     await db.refresh(user)

@@ -95,3 +95,18 @@ class Setting(Base):
     biometrics_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
 
     user = relationship("User", back_populates="settings")
+
+class TrustLedgerEntry(Base):
+    __tablename__ = "trust_ledger_entries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    action_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    title: Mapped[str] = mapped_column(String(150), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    reasoning: Mapped[str] = mapped_column(Text, nullable=True)
+    alternative_options: Mapped[str] = mapped_column(Text, nullable=True)
+    impact: Mapped[str] = mapped_column(Text, nullable=True)
+    confidence_score: Mapped[int] = mapped_column(Integer, default=100)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+

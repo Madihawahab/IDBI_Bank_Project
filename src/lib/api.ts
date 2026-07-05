@@ -156,6 +156,15 @@ export const lifeEventsApi = {
     const { data } = await api.get<LifeEvent[]>("/life-events");
     return data;
   },
+  createLifeEvent: async (payload: {
+    title: string;
+    confidence?: number;
+    prediction_date: string;
+    explanation: string;
+  }): Promise<LifeEvent> => {
+    const { data } = await api.post<LifeEvent>("/life-events", payload);
+    return data;
+  },
 };
 
 export const trustLedgerApi = {

@@ -91,6 +91,9 @@ function MoodPage() {
 
   const value = data?.mood_score ?? 88;
   const off = c - (value / 100) * c;
+  const label = data?.mood_label ?? "Calm Mode";
+  const insight = data?.personalized_insight ?? "Great job! You're making healthy financial choices this week.";
+  const emoji = label === "Calm Mode" ? "😊" : label === "Balanced Mode" ? "🙂" : "😐";
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -99,10 +102,10 @@ function MoodPage() {
           Money Mood
         </div>
         <h1 className="text-balance text-3xl font-bold tracking-tight text-[var(--sbi-navy)] sm:text-4xl">
-          You are in Calm Mode
+          You are in {label}
         </h1>
         <p className="mt-3 text-base text-muted-foreground">
-          Great job! You're making healthy financial choices this week.
+          {insight}
         </p>
       </div>
 
@@ -132,8 +135,8 @@ function MoodPage() {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="text-7xl">😊</div>
-            <div className="mt-1 text-sm font-semibold text-muted-foreground">Calm Mode</div>
+            <div className="text-7xl">{emoji}</div>
+            <div className="mt-1 text-sm font-semibold text-muted-foreground">{label}</div>
             <div className="mt-0.5 text-xs text-muted-foreground">{value}/100 wellness</div>
           </div>
         </div>
@@ -165,9 +168,15 @@ function MoodPage() {
             <ThumbsUp className="h-4 w-4" /> Positive Habits
           </div>
           <ul className="mt-3 space-y-2 text-sm text-foreground/80">
-            <li>• 4 months of consistent SIP top-ups</li>
-            <li>• Dining out down 18% vs last month</li>
-            <li>• Emergency fund reached 92% of target</li>
+            {data?.positive_habits?.map((h: string, i: number) => (
+              <li key={i}>• {h}</li>
+            )) || (
+              <>
+                <li>• 4 months of consistent SIP top-ups</li>
+                <li>• Dining out down 18% vs last month</li>
+                <li>• Emergency fund reached 92% of target</li>
+              </>
+            )}
           </ul>
         </GlassCard>
         <GlassCard>
@@ -175,9 +184,15 @@ function MoodPage() {
             <ThumbsDown className="h-4 w-4" /> Watch Out
           </div>
           <ul className="mt-3 space-y-2 text-sm text-foreground/80">
-            <li>• Subscriptions creeping up — ₹4,200/mo</li>
-            <li>• Credit utilisation touched 38% briefly</li>
-            <li>• 2 impulse purchases over ₹10K this month</li>
+            {data?.watch_out?.map((w: string, i: number) => (
+              <li key={i}>• {w}</li>
+            )) || (
+              <>
+                <li>• Subscriptions creeping up — ₹4,200/mo</li>
+                <li>• Credit utilisation touched 38% briefly</li>
+                <li>• 2 impulse purchases over ₹10K this month</li>
+              </>
+            )}
           </ul>
         </GlassCard>
       </div>
@@ -192,10 +207,10 @@ function MoodPage() {
               <TrendingUp className="h-3 w-3" /> Future You
             </div>
             <div className="mt-1 text-lg font-bold text-[var(--sbi-navy)]">
-              Stay in Calm Mode for 3 more months
+              {data?.future_you_title ?? `Stay in ${label} for 3 more months`}
             </div>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              You'll unlock a ₹38,000 buffer and your retirement readiness moves from 64% → 71%.
+              {data?.future_you_desc ?? "You'll unlock a ₹38,000 buffer and your retirement readiness moves from 64% → 71%."}
             </p>
             <button className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[var(--sbi-blue)]">
               See how <ArrowRight className="h-3.5 w-3.5" />

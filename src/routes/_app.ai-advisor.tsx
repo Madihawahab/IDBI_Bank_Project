@@ -109,14 +109,19 @@ function AdvisorPage() {
     mutationFn: aiAdvisorApi.chat,
     onSuccess: (data) => {
       setIsThinking(false);
-      setMessages((m) => [
-        ...m,
-        {
-          role: "ai",
-          text: data.reply,
-          detailed: data.detailed || undefined,
-        },
-      ]);
+      setMessages((m) => {
+        const newMessages: Msg[] = [
+          ...m,
+          {
+            role: "ai",
+            text: data.reply,
+            detailed: data.detailed || undefined,
+          },
+        ];
+        // Auto-expand reasoning for the new response
+        setExpanded(newMessages.length - 1);
+        return newMessages;
+      });
     },
     onError: (err) => {
       setIsThinking(false);
@@ -137,6 +142,17 @@ function AdvisorPage() {
     setIsThinking(true);
     chatMutation.mutate(text);
   };
+
+  // Auto-send pending prompt from dashboard if present
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const pending = sessionStorage.getItem("idbi_pending_prompt");
+      if (pending) {
+        sessionStorage.removeItem("idbi_pending_prompt");
+        send(pending);
+      }
+    }
+  }, []);
 
   const renderMarkdown = (text: string) => {
     const html = text.replace(

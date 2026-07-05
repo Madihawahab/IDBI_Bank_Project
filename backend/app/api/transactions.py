@@ -5,7 +5,7 @@ from sqlalchemy import or_, and_
 from typing import List, Optional
 
 from app.db.session import get_db
-from app.models.models import User, Account, Transaction
+from app.models.models import User, Account, Transaction, TrustLedgerEntry
 from app.schemas.schemas import TransactionOut, TransactionCreate, BillPaymentCreate, ScanPayCreate
 from app.auth.dependencies import get_current_user
 
@@ -121,6 +121,20 @@ async def transfer_money(
         status="Success"
     )
     db.add(transaction)
+    
+    # Record Trust Ledger audit event
+    tl = TrustLedgerEntry(
+        user_id=current_user.id,
+        action_type="TRANSFER_COMPLETED",
+        title=f"Transfer Completed: ₹{transfer_in.amount:,.2f} to {recipient_name}",
+        description=f"A fund transfer of ₹{transfer_in.amount:,.2f} has been executed successfully from your Savings account to account number {transfer_in.recipient_account}.",
+        reasoning="Requested by the authenticated customer and validated against available account balances.",
+        alternative_options="None",
+        impact=f"Debited ₹{transfer_in.amount:,.2f} from Savings account.",
+        confidence_score=100
+    )
+    db.add(tl)
+    
     await db.commit()
     await db.refresh(transaction)
     
@@ -163,6 +177,20 @@ async def pay_bill(
         status="Success"
     )
     db.add(transaction)
+    
+    # Record Trust Ledger audit event
+    tl = TrustLedgerEntry(
+        user_id=current_user.id,
+        action_type="BILL_PAID",
+        title=f"Bill Paid: {bill_in.biller_name}",
+        description=f"Paid ₹{bill_in.amount:,.2f} for {bill_in.bill_type} bill to {bill_in.biller_name} using your Savings account.",
+        reasoning="Biller credentials verified. Automated balance validation successful.",
+        alternative_options="None",
+        impact=f"Debited ₹{bill_in.amount:,.2f} from Savings account.",
+        confidence_score=100
+    )
+    db.add(tl)
+    
     await db.commit()
     await db.refresh(transaction)
     
@@ -213,6 +241,20 @@ async def scan_pay(
         status="Success"
     )
     db.add(transaction)
+    
+    # Record Trust Ledger audit event
+    tl = TrustLedgerEntry(
+        user_id=current_user.id,
+        action_type="TRANSFER_COMPLETED",
+        title=f"UPI Payment Executed: {merchant_name}",
+        description=f"Completed scan-to-pay transaction of ₹{scan_in.amount:,.2f} to {merchant_name} via secure UPI.",
+        reasoning="UPI QR code signature validated. Automated authorization successful.",
+        alternative_options="None",
+        impact=f"Debited ₹{scan_in.amount:,.2f} from Savings account.",
+        confidence_score=100
+    )
+    db.add(tl)
+    
     await db.commit()
     await db.refresh(transaction)
     

@@ -70,6 +70,12 @@ class ScanPayCreate(BaseModel):
     qr_data: str
     amount: float
 
+class LifeEventCreate(BaseModel):
+    title: str
+    prediction_date: str
+    explanation: str
+    confidence: Optional[int] = None
+
 class LifeEventOut(BaseModel):
     id: int
     title: str

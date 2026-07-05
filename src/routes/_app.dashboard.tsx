@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -67,6 +67,7 @@ const categoryIcons: Record<string, LucideIcon> = {
 
 function HomePage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Modals state
   const [isTransferOpen, setIsTransferOpen] = useState(false);
@@ -531,6 +532,9 @@ function HomePage() {
     if (label === "Transfer") setIsTransferOpen(true);
     if (label === "Pay Bills") setIsPayBillsOpen(true);
     if (label === "Scan & Pay") setIsScanPayOpen(true);
+    if (label === "Invest") navigate({ to: "/finances" });
+    if (label === "Insurance") navigate({ to: "/finances" });
+    if (label === "More") navigate({ to: "/settings" });
   };
 
   return (
@@ -617,7 +621,10 @@ function HomePage() {
             <p className="mt-4 text-sm text-muted-foreground">
               {data?.upcoming_life_event?.explanation ?? "You are financially on track!"}
             </p>
-            <button className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[var(--sbi-blue)]">
+            <button
+              onClick={() => navigate({ to: "/life-events" })}
+              className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[var(--sbi-blue)]"
+            >
               View Details <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -642,7 +649,17 @@ function HomePage() {
                 {data?.ai_insight?.description ??
                   "Consider increasing mutual fund SIP by ₹3,000 to reach your target faster."}
               </p>
-              <button className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--sbi-blue)]">
+              <button
+                onClick={() => {
+                  const title = data?.ai_insight?.title || "Increase SIP by ₹3,000";
+                  const prompt = `Tell me more about the recommendation: "${title}". Why is it useful and how confident are you about it?`;
+                  if (typeof window !== "undefined") {
+                    sessionStorage.setItem("idbi_pending_prompt", prompt);
+                  }
+                  navigate({ to: "/ai-advisor" });
+                }}
+                className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--sbi-blue)]"
+              >
                 View Recommendation <ArrowRight className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -661,7 +678,7 @@ function HomePage() {
           </div>
           <div className="space-y-3">
             {data?.recent_transactions?.map((t: Transaction) => {
-              const isReceived = t.receiver_name === "Aarav Sharma";
+              const isReceived = t.receiver_name === userProfile?.name;
               const Icon = categoryIcons[t.category] || ArrowUpRight;
               return (
                 <div key={t.id} className="flex items-center gap-3">
