@@ -148,12 +148,16 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-feature-settings: "cv11", "ss01", "ss03";
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   h1,
@@ -203,4 +207,60 @@
 @keyframes scaleUp {
   from { transform: scale(0.95); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes floatBlob1 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(40px, -60px) scale(1.15); }
+  66% { transform: translate(-30px, 30px) scale(0.9); }
+}
+
+@keyframes floatBlob2 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(-40px, 50px) scale(0.85); }
+  66% { transform: translate(50px, -30px) scale(1.15); }
+}
+
+@keyframes floatElement {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(6deg); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.35; }
+}
+
+@utility animate-blob1 {
+  animation: floatBlob1 24s infinite ease-in-out;
+}
+
+@utility animate-blob2 {
+  animation: floatBlob2 28s infinite ease-in-out;
+}
+
+@utility animate-float-el {
+  animation: floatElement 7s infinite ease-in-out;
+}
+
+@utility animate-glow-pulse {
+  animation: pulseGlow 5s infinite ease-in-out;
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spinReverseSlow {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@utility animate-spin-slow {
+  animation: spinSlow 40s linear infinite;
+}
+
+@utility animate-spin-reverse-slow {
+  animation: spinReverseSlow 50s linear infinite;
 }

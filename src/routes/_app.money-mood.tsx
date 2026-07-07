@@ -252,7 +252,7 @@ function MoodPage() {
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/20 bg-white/95 p-6 shadow-2xl backdrop-blur-md animate-[scaleUp_0.3s_cubic-bezier(0.34,1.56,0.64,1)] dark:bg-slate-900/95">
+          <div className="relative w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden rounded-3xl border border-white/20 bg-white/95 p-6 shadow-2xl backdrop-blur-md animate-[scaleUp_0.3s_cubic-bezier(0.34,1.56,0.64,1)] dark:bg-slate-900/95">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
               <div className="flex items-center gap-2">
@@ -272,7 +272,7 @@ function MoodPage() {
             </div>
 
             {/* Content */}
-            <div className="mt-4 space-y-4">
+            <div className="mt-4 space-y-4 overflow-y-auto flex-1 pr-2 max-h-[60vh] scrollbar-thin">
               {explLoading ? (
                 <div className="flex flex-col items-center justify-center py-10 space-y-4">
                   <Loader2 className="h-10 w-10 animate-spin text-[var(--sbi-blue)]" />
@@ -310,7 +310,7 @@ function MoodPage() {
                     <ul className="space-y-2.5">
                       {explanation.how.map((tip, i) => (
                         <li key={i} className="flex items-start gap-2.5 text-sm text-foreground/80">
-                          <CheckCircle2 className="h-4.5 w-4.5 shrink-0 text-[var(--success)] mt-0.5" />
+                           <CheckCircle2 className="h-4.5 w-4.5 shrink-0 text-[var(--success)] mt-0.5" />
                           <span>{tip}</span>
                         </li>
                       ))}

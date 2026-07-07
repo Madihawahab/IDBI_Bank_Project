@@ -12,8 +12,10 @@ import {
   Search,
   Menu,
   X,
+  LogOut,
+  ChevronLeft,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { api, authApi } from "@/lib/api";
@@ -95,7 +97,15 @@ function SbiLogo({ className }: { className?: string }) {
 export function AppShell({ children }: { children?: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const handleClose = () => setUserMenuOpen(false);
+    window.addEventListener("click", handleClose);
+    return () => window.removeEventListener("click", handleClose);
+  }, [userMenuOpen]);
 
   const { t } = useTranslation();
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
@@ -179,7 +189,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const unreadCount = (notifications || []).filter((n: Notification) => !n.read).length;
 
   return (
-    <div className="min-h-screen bg-[var(--sbi-sky)]">
+    <div className="min-h-screen bg-[var(--sbi-sky)] relative overflow-x-hidden">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[244px] flex-col border-r border-border bg-white lg:flex">
         <div className="px-6 pt-6 pb-4">
@@ -202,24 +212,66 @@ export function AppShell({ children }: { children?: ReactNode }) {
             </Link>
           ))}
         </nav>
-        <div
-          onClick={handleLogout}
-          className="m-3 flex items-center gap-3 rounded-2xl border border-border bg-muted/40 p-3 cursor-pointer hover:bg-muted transition-all"
-          title="Click to Log Out"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[var(--sbi-blue)] to-[var(--sbi-royal)] text-sm font-semibold text-white">
-            {userInitials}
-          </div>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold">{userName}</div>
-            <div className="truncate text-[11px] text-muted-foreground">{translatedRole}</div>
+        <div className="relative">
+          {/* User profile popup menu */}
+          {userMenuOpen && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="absolute bottom-20 left-3 right-3 z-50 rounded-2xl border border-border bg-white p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.08)] animate-scaleUp"
+            >
+              <Link
+                to="/settings"
+                onClick={() => setUserMenuOpen(false)}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-muted transition-colors font-medium text-foreground"
+              >
+                <Settings className="h-4 w-4 text-muted-foreground" />
+                <span>{t("menu.settings", "Settings")}</span>
+              </Link>
+              <hr className="my-1 border-border" />
+              <button
+                onClick={() => {
+                  setUserMenuOpen(false);
+                  handleLogout();
+                }}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
+              >
+                <LogOut className="h-4 w-4 text-red-500" />
+                <span>Log Out</span>
+              </button>
+            </div>
+          )}
+
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              setUserMenuOpen(!userMenuOpen);
+            }}
+            className="m-3 flex items-center gap-3 rounded-2xl border border-border bg-muted/40 p-3 cursor-pointer hover:bg-muted transition-all select-none"
+            title="User Profile Menu"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[var(--sbi-blue)] to-[var(--sbi-royal)] text-sm font-semibold text-white">
+              {userInitials}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold">{userName}</div>
+              <div className="truncate text-[11px] text-muted-foreground">{translatedRole}</div>
+            </div>
           </div>
         </div>
       </aside>
 
       {/* Mobile top bar */}
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-white/80 px-4 py-3 backdrop-blur-xl lg:hidden">
-        <SbiLogo />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.history.back()}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-muted transition-colors active:scale-95"
+            title="Go Back"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <SbiLogo />
+        </div>
         <button
           onClick={() => setMobileOpen((v) => !v)}
           className="flex h-9 w-9 items-center justify-center rounded-full border border-border"
@@ -251,7 +303,15 @@ export function AppShell({ children }: { children?: ReactNode }) {
       )}
 
       {/* Desktop top bar */}
-      <div className="sticky top-0 z-10 hidden h-16 items-center gap-4 border-b border-border bg-white/80 px-8 backdrop-blur-xl lg:flex lg:pl-[260px]">
+      <div className="sticky top-0 z-20 hidden h-16 items-center gap-4 border-b border-border bg-white/80 px-8 backdrop-blur-xl lg:flex lg:pl-[260px]">
+        <button
+          onClick={() => window.history.back()}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95 shrink-0"
+          title="Go Back"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+
         <div className="relative flex-1 max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -277,7 +337,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
       </div>
 
       {/* Main */}
-      <main className="pb-24 lg:pb-8 lg:pl-[244px]">
+      <main className="pb-24 lg:pb-8 lg:pl-[244px] relative z-10">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
           <Outlet />
           {children}

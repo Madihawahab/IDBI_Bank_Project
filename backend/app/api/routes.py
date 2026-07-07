@@ -915,6 +915,10 @@ async def get_money_mood(
     mood_data = MoneyMoodEngine.evaluate_mood(analytics, transactions)
     return mood_data
 
+# In-memory cache for explain_future_you results to prevent slow LLM calls on every click.
+# Key is a tuple: (user_id, transaction_count, sum_of_balances)
+FUTURE_YOU_CACHE = {}
+
 @router.get("/money-mood/explain-future-you")
 async def explain_future_you(
     current_user: User = Depends(get_current_user),
@@ -938,6 +942,15 @@ async def explain_future_you(
     )
     transactions = result_tx.scalars().all()
     
+    # Check cache
+    tx_count = len(transactions)
+    balance_sum = sum(acc.balance for acc in accounts)
+    cache_key = (current_user.id, tx_count, balance_sum)
+    
+    global FUTURE_YOU_CACHE
+    if cache_key in FUTURE_YOU_CACHE:
+        return FUTURE_YOU_CACHE[cache_key]
+    
     import hashlib
     seed_source = f"{current_user.id}-{current_user.email.lower()}"
     seed_int = int(hashlib.sha256(seed_source.encode()).hexdigest(), 16) % (10**8)
@@ -953,6 +966,9 @@ async def explain_future_you(
     
     analytics = FinancialAnalyticsCalculator.compute_all_metrics(accounts, transactions, persona_name)
     explanation = await ai_provider.generate_future_you_explanation(current_user.name, persona_name, analytics)
+    
+    # Store in cache
+    FUTURE_YOU_CACHE[cache_key] = explanation
     return explanation
 
 # 4. Offers

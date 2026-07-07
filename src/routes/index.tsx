@@ -57,6 +57,14 @@ function SbiLogoIcon({ className = "h-8 w-8" }: { className?: string }) {
 function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("access_token");
+      setIsLoggedIn(!!token);
+    }
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -172,10 +180,10 @@ function LandingPage() {
               <ChevronDown className="h-3.5 w-3.5 opacity-60" />
             </div>
             <Link
-              to="/login"
+              to={isLoggedIn ? "/dashboard" : "/login"}
               className="rounded-full bg-[var(--sbi-royal)] px-5 py-2 text-[14px] font-semibold text-white shadow-[0_4px_12px_rgba(0,131,108,0.12)] transition-all hover:bg-[var(--sbi-blue)] hover:translate-y-[-1px] hover:shadow-[0_6px_16px_rgba(245,130,32,0.2)] active:translate-y-0"
             >
-              Get Started
+              {isLoggedIn ? "Go to Dashboard" : "Get Started"}
             </Link>
           </div>
 
@@ -222,10 +230,10 @@ function LandingPage() {
               </div>
             </div>
             <Link
-              to="/login"
+              to={isLoggedIn ? "/dashboard" : "/login"}
               className="mt-3 block text-center rounded-2xl bg-[var(--sbi-royal)] py-3 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(0,131,108,0.12)]"
             >
-              Get Started
+              {isLoggedIn ? "Go to Dashboard" : "Get Started"}
             </Link>
           </div>
         )}
@@ -263,10 +271,10 @@ function LandingPage() {
           {/* CTA Buttons */}
           <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto mb-8">
             <Link
-              to="/login"
+              to={isLoggedIn ? "/dashboard" : "/login"}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[var(--sbi-royal)] px-8 py-3.5 text-[15px] font-semibold text-white shadow-[0_6px_20px_rgba(0,131,108,0.15)] transition-all hover:bg-[var(--sbi-blue)] hover:translate-y-[-2px] hover:shadow-[0_8px_24px_rgba(245,130,32,0.25)] active:translate-y-0 group"
             >
-              Get Started
+              {isLoggedIn ? "Go to Dashboard" : "Get Started"}
               <ArrowRight className="h-4.5 w-4.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <button
@@ -692,10 +700,10 @@ function LandingPage() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                to="/login"
+                to={isLoggedIn ? "/dashboard" : "/login"}
                 className="w-full sm:w-auto inline-flex items-center justify-center rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-[var(--sbi-royal)] transition-all hover:bg-slate-50 hover:translate-y-[-1.5px] hover:shadow-lg active:translate-y-0"
               >
-                Get Started
+                {isLoggedIn ? "Go to Dashboard" : "Get Started"}
               </Link>
               <button
                 onClick={() => scrollToSection("how-it-works")}
