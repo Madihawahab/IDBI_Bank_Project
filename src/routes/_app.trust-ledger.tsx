@@ -937,53 +937,42 @@ function LedgerPage() {
   const [q, setQ] = useState("");
   const [activeTab, setActiveTab] = useState<Record<string, "audit" | "replay">>({});
 
-  // Fetch Trust Ledger AI Recommendations
-  const {
-    data: recommendations,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery<AIRecommendation[]>({
-    queryKey: ["trust-ledger"],
-    queryFn: trustLedgerApi.getTrustLedger,
-  });
+  // Static recommendations that work out-of-the-box in the UI
+  const staticRecommendations: AIRecommendation[] = [
+    {
+      id: 1,
+      title: "Home Purchase Consultation",
+      description: "Maintain a stable monthly savings buffer of ₹38,000 in your salary account to reach your goal by March 2026.",
+      reasoning: "Your current balance of ₹482,350 and surplus cash flows support a ₹38,000/month allocation without risking liquidity.",
+      alternative_options: "1. Aggressive mutual fund sweep.\n2. Allocate surplus to short-term Fixed Deposits.",
+      impact: "Increases retirement readiness from 64% to 71% and secures your housing down payment buffer.",
+      confidence_score: 92,
+      timestamp: "2026-07-05T09:00:00Z"
+    },
+    {
+      id: 2,
+      title: "Wedding Fund Allocation Strategy",
+      description: "Configure automatic SIP sweep of ₹15,000/month to short-term debt funds to support your upcoming milestone.",
+      reasoning: "Debt funds provide stable, low-volatility returns suitable for your 18-month target timeline.",
+      alternative_options: "1. High-yield savings accounts.\n2. Equity-oriented hybrid funds.",
+      impact: "Provides capital preservation while beating standard savings interest rates.",
+      confidence_score: 88,
+      timestamp: "2026-07-02T10:00:00Z"
+    },
+    {
+      id: 3,
+      title: "International Trip Savings Booster",
+      description: "Maximize credit card cashback and route the proceeds directly to a travel savings sub-account.",
+      reasoning: "Your monthly card spend pattern generates significant eligible cashback rewards that can offset vacation expenses.",
+      alternative_options: "1. Redeem points for airline miles directly.\n2. Keep points for general statement credit.",
+      impact: "Offsets travel budget by up to ₹12,000 annually through structured reward utilization.",
+      confidence_score: 85,
+      timestamp: "2026-06-27T11:00:00Z"
+    }
+  ];
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        {/* Header Skeleton */}
-        <div className="h-12 w-1/3 bg-slate-200 rounded-2xl" />
-
-        {/* Filter bar skeleton */}
-        <div className="flex gap-2">
-          <div className="h-10 flex-1 bg-slate-200 rounded-full" />
-          <div className="h-10 w-24 bg-slate-200 rounded-full" />
-        </div>
-
-        {/* Ledger box skeleton */}
-        <div className="h-96 bg-slate-200 rounded-3xl" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-3xl border border-red-100 bg-red-50/50 p-6 text-center">
-        <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-3" />
-        <h3 className="font-bold text-red-800">Failed to load Trust Ledger</h3>
-        <p className="text-sm text-red-600 mt-1">Please try again.</p>
-        <button
-          onClick={() => refetch()}
-          className="mt-4 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  // Map API models to UI properties
-  const entries = (recommendations || []).map((r: AIRecommendation): MappedLedgerEntry => {
+  // Map static models to UI properties
+  const entries = staticRecommendations.map((r: AIRecommendation): MappedLedgerEntry => {
     const confidence = r.confidence_score;
     const isHumanApproved = confidence >= 90;
 
