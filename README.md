@@ -8,11 +8,11 @@ An intelligent, AI-first financial companion developed for **IDBI Bank**. **IDBI
 
 - **Personalised Dashboard**: Comprehensive overview of accounts (Savings, Salary, Credit Card, and Fixed Deposit) with dynamic greeting, cash flow metrics (Income, Expenses, Net Worth), and interactive transfer, bill payment, and scan-pay forms.
 - **Interactive History overlay**: Search, filter, and sort transactions inside the dashboard overlay dynamically.
-- **AI Advisor**: Real-time multi-turn financial chat assistant powered by **NVIDIA NIM** (`meta/llama-3.1-70b-instruct`). Features keyboard shortcuts (`Enter`/`Shift+Enter`), automatic response tags, markdown support, inputs locking, and localStorage history preservation.
+- **AI Advisor**: Real-time multi-turn financial chat assistant powered by **NVIDIA NIM** (`meta/llama-3.1-8b-instruct` optimized for latency). Features keyboard shortcuts (`Enter`/`Shift+Enter`), automatic response tags, markdown support, inputs locking, and localStorage history preservation.
 - **Life Events Hub**: Predicts major life milestones (e.g., buying a home, children's education, retirement) and suggests custom target plans.
-- **Money Mood**: Analyses spending behavior and sentiment, offering visual mood indexes.
-- **Trust Ledger**: A tamper-evident log showing bank recommendations, agreements, and acceptances.
-- **Settings Panel**: Configures personal settings, notification flags, biometrics, and languages.
+- **Money Mood**: Analyses spending behavior and sentiment, offering visual mood indexes and pre-fetched dynamic savings diagnostics.
+- **Trust Ledger**: An explainable AI audit trail showing the 'why', 'how', and alternatives for every recommendation. Features an interactive **Decision Replay** timeline, multi-agent consensus verification (Risk, Planner, Compliance, Advocate), **Counterfactual Scenarios** comparison, and expected **Customer Benefit / Wealth Impact Metrics** to guarantee absolute transparency.
+- **Settings Panel**: Configures personal settings, notification flags, biometrics, and **Multilingual capabilities** (fully-translated localizations supporting English, Hindi, and other regional languages for a localized banking experience).
 - **Production-Grade Auth UX**: Seamless Login and Registration flows with interactive inline error validation, request loading states, custom Axios refresh tokens interceptors, and strict field preservation on failure.
 
 ---
@@ -79,7 +79,7 @@ Ensure you have the following installed:
    REDIS_URL=redis://localhost:6379/0
    NVIDIA_API_KEY=nvapi-your-key-here
    NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
-   NVIDIA_MODEL=meta/llama-3.1-70b-instruct
+   NVIDIA_MODEL=meta/llama-3.1-8b-instruct
    CORS_ORIGINS=["http://localhost:3000","http://localhost:3001","http://localhost:5173","http://localhost:5174","http://127.0.0.1:3000","http://127.0.0.1:3001","http://127.0.0.1:5173","http://127.0.0.1:5174"]
    ```
 
