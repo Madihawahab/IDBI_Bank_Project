@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.future import select
 from app.db.session import engine, Base, async_session
-from app.models.models import User, Account, Transaction, LifeEvent, AIRecommendation, Offer, Setting
+from app.models.models import User, Account, Transaction, LifeEvent, AIRecommendation, Offer, Setting, TrustLedgerEntry
 from app.core.security import get_password_hash
 
 async def seed_data(session):
@@ -10,7 +10,48 @@ async def seed_data(session):
     result = await session.execute(select(User).filter_by(email="aarav.sharma@idbi.co.in"))
     existing_user = result.scalars().first()
     if existing_user:
-        print("Database already seeded.")
+        # If user exists, check if TrustLedgerEntry is empty and seed if needed
+        result_tl = await session.execute(select(TrustLedgerEntry).filter_by(user_id=existing_user.id))
+        if not result_tl.scalars().first():
+            print("User exists but Trust Ledger is empty. Seeding default Trust Ledger entries...")
+            tl1 = TrustLedgerEntry(
+                user_id=existing_user.id,
+                action_type="AI_RECOMMENDATION_SHOWN",
+                title="Home Purchase Consultation",
+                description="Maintain a stable monthly savings buffer of ₹38,000 in your salary account to reach your goal by March 2026.",
+                reasoning="Your current balance of ₹482,350 and surplus cash flows support a ₹38,000/month allocation without risking liquidity.",
+                alternative_options="1. Aggressive mutual fund sweep.\n2. Allocate surplus to short-term Fixed Deposits.",
+                impact="Increases retirement readiness from 64% to 71% and secures your housing down payment buffer.",
+                confidence_score=92,
+                timestamp=datetime.now(timezone.utc) - timedelta(days=2)
+            )
+            tl2 = TrustLedgerEntry(
+                user_id=existing_user.id,
+                action_type="AI_RECOMMENDATION_SHOWN",
+                title="Wedding Fund Allocation Strategy",
+                description="Configure automatic SIP sweep of ₹15,000/month to short-term debt funds to support your upcoming milestone.",
+                reasoning="Debt funds provide stable, low-volatility returns suitable for your 18-month target timeline.",
+                alternative_options="1. High-yield savings accounts.\n2. Equity-oriented hybrid funds.",
+                impact="Provides capital preservation while beating standard savings interest rates.",
+                confidence_score=88,
+                timestamp=datetime.now(timezone.utc) - timedelta(days=5)
+            )
+            tl3 = TrustLedgerEntry(
+                user_id=existing_user.id,
+                action_type="AI_RECOMMENDATION_SHOWN",
+                title="International Trip Savings Booster",
+                description="Maximize credit card cashback and route the proceeds directly to a travel savings sub-account.",
+                reasoning="Your monthly card spend pattern generates significant eligible cashback rewards that can offset vacation expenses.",
+                alternative_options="1. Redeem points for airline miles directly.\n2. Keep points for general statement credit.",
+                impact="Offsets travel budget by up to ₹12,000 annually through structured reward utilization.",
+                confidence_score=85,
+                timestamp=datetime.now(timezone.utc) - timedelta(days=10)
+            )
+            session.add_all([tl1, tl2, tl3])
+            await session.commit()
+            print("Default Trust Ledger entries seeded successfully.")
+        else:
+            print("Database already seeded.")
         return
 
     print("Seeding mock database...")
@@ -155,6 +196,42 @@ async def seed_data(session):
         eligibility="Premium Customer Status with consistent monthly salary credits"
     )
     session.add_all([o1, o2])
+
+    # 8. Create Default Trust Ledger Entries (needed for frontend UI filters)
+    tl1 = TrustLedgerEntry(
+        user_id=user.id,
+        action_type="AI_RECOMMENDATION_SHOWN",
+        title="Home Purchase Consultation",
+        description="Maintain a stable monthly savings buffer of ₹38,000 in your salary account to reach your goal by March 2026.",
+        reasoning="Your current balance of ₹482,350 and surplus cash flows support a ₹38,000/month allocation without risking liquidity.",
+        alternative_options="1. Aggressive mutual fund sweep.\n2. Allocate surplus to short-term Fixed Deposits.",
+        impact="Increases retirement readiness from 64% to 71% and secures your housing down payment buffer.",
+        confidence_score=92,
+        timestamp=datetime.now(timezone.utc) - timedelta(days=2)
+    )
+    tl2 = TrustLedgerEntry(
+        user_id=user.id,
+        action_type="AI_RECOMMENDATION_SHOWN",
+        title="Wedding Fund Allocation Strategy",
+        description="Configure automatic SIP sweep of ₹15,000/month to short-term debt funds to support your upcoming milestone.",
+        reasoning="Debt funds provide stable, low-volatility returns suitable for your 18-month target timeline.",
+        alternative_options="1. High-yield savings accounts.\n2. Equity-oriented hybrid funds.",
+        impact="Provides capital preservation while beating standard savings interest rates.",
+        confidence_score=88,
+        timestamp=datetime.now(timezone.utc) - timedelta(days=5)
+    )
+    tl3 = TrustLedgerEntry(
+        user_id=user.id,
+        action_type="AI_RECOMMENDATION_SHOWN",
+        title="International Trip Savings Booster",
+        description="Maximize credit card cashback and route the proceeds directly to a travel savings sub-account.",
+        reasoning="Your monthly card spend pattern generates significant eligible cashback rewards that can offset vacation expenses.",
+        alternative_options="1. Redeem points for airline miles directly.\n2. Keep points for general statement credit.",
+        impact="Offsets travel budget by up to ₹12,000 annually through structured reward utilization.",
+        confidence_score=85,
+        timestamp=datetime.now(timezone.utc) - timedelta(days=10)
+    )
+    session.add_all([tl1, tl2, tl3])
 
     await session.commit()
     print("Database seeding completed.")
