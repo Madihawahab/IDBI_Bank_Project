@@ -117,6 +117,7 @@ function LoginPage() {
       console.log(`Login success: ${loginEmail}`);
       localStorage.setItem("access_token", data.access_token);
       localStorage.setItem("refresh_token", data.refresh_token);
+      sessionStorage.removeItem("idbi_future_you_explanation");
 
       toast.success("Login successful. Welcome back!");
       setIsLoading(true);

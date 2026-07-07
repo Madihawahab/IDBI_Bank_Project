@@ -62,6 +62,9 @@ function MoodPage() {
     try {
       const res = await moneyMoodApi.explainFutureYou();
       setExplanation(res);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("idbi_future_you_explanation", JSON.stringify(res));
+      }
     } catch (err: any) {
       setExplError(err.message || "Failed to load dynamic explanation.");
     } finally {
@@ -72,6 +75,17 @@ function MoodPage() {
   const handleSeeHowClick = () => {
     setModalOpen(true);
     if (!explanation) {
+      if (typeof window !== "undefined") {
+        const cached = sessionStorage.getItem("idbi_future_you_explanation");
+        if (cached) {
+          try {
+            setExplanation(JSON.parse(cached));
+            return;
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
       fetchExplanation();
     }
   };

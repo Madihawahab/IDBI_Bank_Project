@@ -167,6 +167,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
+        sessionStorage.removeItem("idbi_future_you_explanation");
         queryClient.clear();
         toast.success("Logged out successfully");
         window.location.href = "/login";
@@ -176,6 +177,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
+        sessionStorage.removeItem("idbi_future_you_explanation");
         queryClient.clear();
         window.location.href = "/login";
       }
