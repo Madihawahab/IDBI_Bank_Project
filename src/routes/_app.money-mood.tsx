@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sparkles, TrendingUp, ThumbsUp, ThumbsDown, ArrowRight, AlertCircle, X, Loader2, CheckCircle2 } from "lucide-react";
 import { GlassCard } from "@/components/app-shell";
 import { useQuery } from "@tanstack/react-query";
@@ -71,6 +71,22 @@ function MoodPage() {
       setExplLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Pre-fetch future you explanation in the background on mount
+    if (typeof window !== "undefined") {
+      const cached = sessionStorage.getItem("idbi_future_you_explanation");
+      if (cached) {
+        try {
+          setExplanation(JSON.parse(cached));
+          return;
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+    fetchExplanation();
+  }, []);
 
   const handleSeeHowClick = () => {
     setModalOpen(true);
