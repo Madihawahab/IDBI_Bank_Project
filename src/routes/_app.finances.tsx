@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { PageHeader, GlassCard } from "@/components/app-shell";
 import { dashboardApi, transactionsApi, lifeEventsApi, authApi } from "@/lib/api";
+import { useTranslation } from "@/lib/translations";
 import { DashboardData, Transaction, LifeEvent } from "../types/api";
 
 export const Route = createFileRoute("/_app/finances")({
@@ -42,6 +43,7 @@ const investments = [
 const bars = [60, 75, 45, 90, 70, 85, 55, 95, 65, 80, 72, 88];
 
 function FinancesPage() {
+  const { t } = useTranslation();
   // Fetch Current User
   const { data: userProfile, isLoading: isUserLoading } = useQuery({
     queryKey: ["userMe"],
@@ -303,9 +305,9 @@ function FinancesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Finances"
-        title="Your money, organised."
-        subtitle="Net worth, cash flow, investments, loans and goals — across every account."
+        eyebrow={t("menu.finances")}
+        title={t("finances.title", "Your money, organised.")}
+        subtitle={t("finances.subtitle", "Net worth, cash flow, investments, loans and goals — across every account.")}
       />
 
       {/* Net worth hero */}
@@ -316,12 +318,12 @@ function FinancesPage() {
         >
           <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[var(--sbi-blue)]/30 blur-3xl" />
           <div className="relative">
-            <div className="text-sm text-white/80">Total Net Worth</div>
+            <div className="text-sm text-white/80">{t("dashboard.net_worth")}</div>
             <div className="mt-2 text-5xl font-bold tracking-tight sm:text-6xl">
               ₹{totalNetWorth.toLocaleString("en-IN")}
             </div>
             <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium">
-              <ArrowUpRight className="h-3 w-3" /> ₹1,45,230 (8.4%) vs last month
+              <ArrowUpRight className="h-3 w-3" /> ₹1,45,230 (8.4%) {t("dashboard.vs_last_month", "vs last month")}
             </div>
 
             <div className="mt-8 flex h-24 items-end gap-1.5">
@@ -344,21 +346,21 @@ function FinancesPage() {
         <div className="grid gap-4">
           <KPI
             icon={ArrowUpRight}
-            label="Income (This Month)"
+            label={t("finances.income", "Income (This Month)")}
             value={`₹${incomeThisMonth.toLocaleString("en-IN")}`}
             tone="success"
             sub="+ ₹15K vs avg"
           />
           <KPI
             icon={ArrowDownRight}
-            label="Expenses"
+            label={t("finances.expenses", "Expenses")}
             value={`₹${expensesThisMonth.toLocaleString("en-IN")}`}
             tone="error"
             sub="− 6% vs avg"
           />
           <KPI
             icon={Wallet}
-            label="Monthly Cash Flow"
+            label={t("finances.cash_flow", "Monthly Cash Flow")}
             value={`${cashFlow >= 0 ? "+" : "−"} ₹${Math.abs(cashFlow).toLocaleString("en-IN")}`}
             tone={cashFlow >= 0 ? "success" : "error"}
             sub={cashFlow >= 0 ? "Healthy" : "Deficit"}
@@ -368,7 +370,7 @@ function FinancesPage() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         <GlassCard>
-          <SectionTitle icon={Landmark}>Accounts</SectionTitle>
+          <SectionTitle icon={Landmark}>{t("finances.accounts")}</SectionTitle>
           <div className="mt-4 divide-y divide-border">
             {accountsList.map((a) => (
               <div key={a.name} className="flex items-center justify-between py-3">
@@ -387,7 +389,7 @@ function FinancesPage() {
         </GlassCard>
 
         <GlassCard>
-          <SectionTitle icon={TrendingUp}>Investments</SectionTitle>
+          <SectionTitle icon={TrendingUp}>{t("finances.investments", "Investments")}</SectionTitle>
           <div className="mt-4 grid grid-cols-2 gap-3">
             {dynamicInvestments.map((i) => (
               <div key={i.name} className="rounded-2xl border border-border bg-muted/30 p-4">
@@ -404,7 +406,7 @@ function FinancesPage() {
 
       <div className="grid gap-5 lg:grid-cols-3">
         <GlassCard>
-          <SectionTitle icon={Receipt}>Bills & EMIs</SectionTitle>
+          <SectionTitle icon={Receipt}>{t("finances.bills", "Bills & EMIs")}</SectionTitle>
           <div className="mt-4 space-y-3">
             {dynamicBills.map((b) => (
               <div
@@ -422,7 +424,7 @@ function FinancesPage() {
         </GlassCard>
 
         <GlassCard>
-          <SectionTitle icon={Shield}>Insurance</SectionTitle>
+          <SectionTitle icon={Shield}>{t("settings.connected_sub", "Insurance")}</SectionTitle>
           <div className="mt-4 space-y-3">
             {dynamicInsurance.map((b) => (
               <div
@@ -440,7 +442,7 @@ function FinancesPage() {
         </GlassCard>
 
         <GlassCard>
-          <SectionTitle icon={Target}>Goals</SectionTitle>
+          <SectionTitle icon={Target}>{t("life_events.milestones", "Goals")}</SectionTitle>
           <div className="mt-4 space-y-4">
             {dynamicGoals.map((g) => (
               <div key={g.g}>

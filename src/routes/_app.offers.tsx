@@ -30,6 +30,7 @@ interface MappedOffer {
 }
 import { offersApi } from "@/lib/api";
 import { Offer } from "../types/api";
+import { useTranslation } from "@/lib/translations";
 
 function OffersErrorFallback({ error, reset }: { error: Error; reset: () => void }) {
   return (
@@ -73,6 +74,7 @@ const icons: Record<string, LucideIcon> = {
 
 function OffersPage() {
   const [open, setOpen] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   // Fetch Offers
   const {
@@ -159,7 +161,7 @@ function OffersPage() {
       eligibility: o.eligibility,
       signals,
       confidence: o.confidence_score,
-      match: `${o.confidence_score}% Match`,
+      match: `${o.confidence_score}% ${t("offers.match_label", "Match")}`,
       cta: o.cta_text,
       tint,
     };
@@ -168,12 +170,12 @@ function OffersPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Offers & Rewards"
-        title="Built for your moments."
-        subtitle="No generic banners — every offer is matched to your life events, goals and eligibility."
+        eyebrow={t("menu.offers")}
+        title={t("offers.title")}
+        subtitle={t("offers.subtitle")}
         action={
           <button className="rounded-full border border-border bg-white px-3.5 py-1.5 text-sm font-medium">
-            For You
+            {t("menu.events_mobile", "For You")}
           </button>
         }
       />
@@ -201,7 +203,7 @@ function OffersPage() {
                     </div>
                     <div className="mt-1 text-sm font-bold text-foreground">{o.headline}</div>
                     <div className="mt-1.5 rounded-xl bg-muted/40 p-2.5">
-                      <div className="text-xs text-muted-foreground">Estimated savings</div>
+                      <div className="text-xs text-muted-foreground">{t("offers.estimated_savings", "Estimated savings")}</div>
                       <div className="flex items-baseline gap-1 text-[var(--success)]">
                         <span className="text-lg font-bold">{o.savings}</span>
                         <span className="text-[10px] font-medium text-muted-foreground">
@@ -217,7 +219,7 @@ function OffersPage() {
                     onClick={() => setOpen(isOpen ? null : o.id)}
                     className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--sbi-blue)]"
                   >
-                    {isOpen ? "Hide details" : "Why am I seeing this?"}
+                    {isOpen ? t("offers.hide_details") : t("offers.why_seeing")}
                     <ChevronDown
                       className={`h-3.5 w-3.5 transition ${isOpen ? "rotate-180" : ""}`}
                     />
@@ -228,18 +230,18 @@ function OffersPage() {
                 {isOpen && (
                   <div className="mt-4 space-y-4 border-t border-border pt-4 text-xs">
                     <div>
-                      <div className="font-semibold text-[var(--sbi-navy)]">The Recommendation</div>
+                      <div className="font-semibold text-[var(--sbi-navy)]">{t("offers.recommendation")}</div>
                       <p className="mt-1 leading-relaxed text-muted-foreground">{o.why}</p>
                     </div>
 
                     <div>
-                      <div className="font-semibold text-[var(--sbi-navy)]">Eligibility Criteria</div>
+                      <div className="font-semibold text-[var(--sbi-navy)]">{t("offers.eligibility")}</div>
                       <p className="mt-1 leading-relaxed text-muted-foreground">{o.eligibility}</p>
                     </div>
 
                     <div>
                       <div className="mb-1.5 font-semibold text-[var(--sbi-navy)]">
-                        Signals Used
+                        {t("offers.signals")}
                       </div>
                       <div className="flex flex-wrap gap-1">
                         {o.signals.map((s: string) => (
@@ -249,7 +251,7 @@ function OffersPage() {
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-[var(--sbi-navy)]">Match Confidence</span>
+                      <span className="font-semibold text-[var(--sbi-navy)]">{t("offers.match")}</span>
                       <ConfidenceRing value={o.confidence} size={32} />
                     </div>
                   </div>
@@ -258,7 +260,7 @@ function OffersPage() {
 
               <div className="bg-slate-50/50 p-4 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-                  Pre-approved
+                  {t("offers.pre_approved")}
                 </span>
                 <button className="rounded-full bg-[var(--sbi-blue)] px-4 py-1.5 text-xs font-semibold text-white shadow-[0_4px_12px_-4px_rgba(0,173,239,0.5)] hover:opacity-95">
                   {o.cta}

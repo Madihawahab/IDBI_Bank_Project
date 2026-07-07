@@ -19,6 +19,26 @@ import { cn } from "@/lib/utils";
 import { api, authApi } from "@/lib/api";
 import { toast } from "sonner";
 import { Notification } from "../types/api";
+import { useTranslation } from "@/lib/translations";
+
+const NAV_KEYS: Record<string, string> = {
+  "Home": "menu.home",
+  "Life Events": "menu.life_events",
+  "AI Advisor": "menu.ai_advisor",
+  "Finances": "menu.finances",
+  "Trust Ledger": "menu.trust_ledger",
+  "Money Mood": "menu.money_mood",
+  "Offers": "menu.offers",
+  "Settings": "menu.settings"
+};
+
+const MOBILE_NAV_KEYS: Record<string, string> = {
+  "Home": "menu.home",
+  "Events": "menu.events_mobile",
+  "AI": "menu.ai_mobile",
+  "Money": "menu.money_mobile",
+  "Mood": "menu.mood_mobile"
+};
 
 const NAV = [
   { to: "/dashboard", label: "Home", icon: Home },
@@ -77,6 +97,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const queryClient = useQueryClient();
 
+  const { t } = useTranslation();
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
 
   // Query User Profile dynamically
@@ -98,6 +119,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     .join("");
   const userRole =
     userProfile?.role === "Customer" ? "Premium Customer" : userProfile?.role || "Premium Customer";
+  const translatedRole = userRole === "Premium Customer" ? t("menu.premium_customer") : userRole;
 
   // Query Notifications count from backend
   const { data: notifications } = useQuery({
@@ -176,7 +198,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
               )}
             >
               <Icon className={cn("h-[18px] w-[18px]", isActive(to) && "text-[var(--sbi-blue)]")} />
-              {label}
+              {t(NAV_KEYS[label] || label, label)}
             </Link>
           ))}
         </nav>
@@ -190,7 +212,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
           </div>
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold">{userName}</div>
-            <div className="truncate text-[11px] text-muted-foreground">{userRole}</div>
+            <div className="truncate text-[11px] text-muted-foreground">{translatedRole}</div>
           </div>
         </div>
       </aside>
@@ -222,7 +244,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
               )}
             >
               <Icon className="h-[18px] w-[18px]" />
-              {label}
+              {t(NAV_KEYS[label] || label, label)}
             </Link>
           ))}
         </div>
@@ -233,7 +255,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
         <div className="relative flex-1 max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
-            placeholder="Search anything..."
+            placeholder={t("dashboard.search_placeholder")}
             className="w-full rounded-full border border-border bg-muted/40 py-2 pl-9 pr-12 text-sm outline-none transition focus:border-[var(--sbi-blue)] focus:bg-white"
           />
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-border bg-white px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -283,7 +305,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
                   <Icon className={cn("h-4 w-4", !active && "text-muted-foreground")} />
                 </div>
                 <span className={cn(active ? "text-[var(--sbi-royal)]" : "text-muted-foreground")}>
-                  {label}
+                  {t(MOBILE_NAV_KEYS[label] || label, label)}
                 </span>
               </Link>
             );

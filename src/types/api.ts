@@ -36,6 +36,8 @@ export interface LifeEvent {
   confidence: number;
   prediction_date: string;
   explanation: string;
+  alternative_options?: string;
+  future_projection?: string;
 }
 
 export interface DecisionReplayStep {

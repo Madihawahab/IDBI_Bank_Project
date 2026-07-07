@@ -25,6 +25,7 @@ import { GlassCard } from "@/components/app-shell";
 import { dashboardApi, transactionsApi, authApi } from "@/lib/api";
 import { toast } from "sonner";
 import { DashboardData, Transaction } from "../types/api";
+import { useTranslation } from "@/lib/translations";
 
 function DashboardErrorFallback({ error, reset }: { error: Error; reset: () => void }) {
   return (
@@ -68,6 +69,7 @@ const categoryIcons: Record<string, LucideIcon> = {
 function HomePage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Modals state
   const [isTransferOpen, setIsTransferOpen] = useState(false);
@@ -558,7 +560,7 @@ function HomePage() {
           <div className="absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-[var(--sbi-navy)]/30 blur-3xl" />
           <div className="relative">
             <div className="flex items-center gap-2 text-sm text-white/80">
-              Total Available Balance <Eye className="h-4 w-4" />
+              {t("dashboard.total_balance")} <Eye className="h-4 w-4" />
             </div>
             <div className="mt-3 flex items-baseline gap-1">
               <span className="text-5xl font-bold tracking-tight sm:text-6xl">
@@ -567,18 +569,26 @@ function HomePage() {
               <span className="text-2xl font-semibold text-white/80">{balanceDec}</span>
             </div>
             <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium">
-              <ArrowUpRight className="h-3 w-3" /> ₹12,840 vs last month
+              <ArrowUpRight className="h-3 w-3" /> ₹12,840 {t("dashboard.vs_last_month", "vs last month")}
             </div>
             <div className="mt-6 flex flex-wrap gap-2">
-              {["Transfer", "Pay Bills", "Scan & Pay", "More"].map((a) => (
-                <button
-                  key={a}
-                  onClick={() => handleQuickAction(a)}
-                  className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium backdrop-blur-md transition hover:bg-white/25"
-                >
-                  {a}
-                </button>
-              ))}
+              {["Transfer", "Pay Bills", "Scan & Pay", "More"].map((a) => {
+                const labelKeys: Record<string, string> = {
+                  "Transfer": "dashboard.transfer",
+                  "Pay Bills": "dashboard.pay_bills",
+                  "Scan & Pay": "dashboard.scan_pay",
+                  "More": "dashboard.more",
+                };
+                return (
+                  <button
+                    key={a}
+                    onClick={() => handleQuickAction(a)}
+                    className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium backdrop-blur-md transition hover:bg-white/25"
+                  >
+                    {t(labelKeys[a] || a, a)}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -587,7 +597,7 @@ function HomePage() {
           <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[var(--sbi-blue)]/10 blur-2xl" />
           <div className="relative">
             <div className="text-xs font-semibold uppercase tracking-wider text-[var(--sbi-blue)]">
-              Upcoming Life Event
+              {t("dashboard.upcoming_life_event")}
             </div>
             <div className="mt-3 flex items-start justify-between gap-3">
               <div>
@@ -605,7 +615,7 @@ function HomePage() {
 
             <div className="mt-5 rounded-2xl bg-[var(--success)]/10 p-3">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-[var(--success)]">Confidence</span>
+                <span className="font-medium text-[var(--success)]">{t("offers.match", "Confidence")}</span>
                 <span className="font-bold text-[var(--success)]">
                   {data?.upcoming_life_event?.confidence ?? 92}%
                 </span>
@@ -625,7 +635,7 @@ function HomePage() {
               onClick={() => navigate({ to: "/life-events" })}
               className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[var(--sbi-blue)]"
             >
-              View Details <ArrowRight className="h-3.5 w-3.5" />
+              {t("offers.why_seeing", "View Details")} <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </GlassCard>
@@ -640,7 +650,7 @@ function HomePage() {
             </div>
             <div className="flex-1">
               <div className="text-xs font-semibold uppercase tracking-wider text-[var(--sbi-blue)]">
-                Today's AI Insight
+                {t("dashboard.ai_insight")}
               </div>
               <div className="mt-1.5 text-lg font-bold text-[var(--sbi-navy)]">
                 {data?.ai_insight?.title ?? "Increase SIP by ₹3,000"}
@@ -660,7 +670,7 @@ function HomePage() {
                 }}
                 className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--sbi-blue)]"
               >
-                View Recommendation <ArrowRight className="h-3.5 w-3.5" />
+                {t("offers.why_seeing", "View Recommendation")} <ArrowRight className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
@@ -668,12 +678,12 @@ function HomePage() {
 
         <GlassCard>
           <div className="mb-4 flex items-center justify-between">
-            <div className="font-semibold text-[var(--sbi-navy)]">Recent Transactions</div>
+            <div className="font-semibold text-[var(--sbi-navy)]">{t("dashboard.recent_transactions")}</div>
             <button
               onClick={() => setIsAllTxOpen(true)}
               className="text-xs font-semibold text-[var(--sbi-blue)]"
             >
-              View All
+              {t("trust_ledger.search", "View All")}
             </button>
           </div>
           <div className="space-y-3">
@@ -718,16 +728,16 @@ function HomePage() {
       {/* Quick actions menu */}
       <GlassCard>
         <div className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Quick Actions
+          {t("dashboard.quick_actions")}
         </div>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
           {[
-            { icon: Send, label: "Transfer" },
-            { icon: Receipt, label: "Pay Bills" },
-            { icon: ScanLine, label: "Scan & Pay" },
-            { icon: TrendingUp, label: "Invest" },
-            { icon: Shield, label: "Insurance" },
-            { icon: MoreHorizontal, label: "More" },
+            { icon: Send, label: "Transfer", key: "dashboard.transfer" },
+            { icon: Receipt, label: "Pay Bills", key: "dashboard.pay_bills" },
+            { icon: ScanLine, label: "Scan & Pay", key: "dashboard.scan_pay" },
+            { icon: TrendingUp, label: "Invest", key: "dashboard.invest" },
+            { icon: Shield, label: "Insurance", key: "dashboard.insurance" },
+            { icon: MoreHorizontal, label: "More", key: "dashboard.more" },
           ].map((a) => (
             <button
               key={a.label}
@@ -737,7 +747,7 @@ function HomePage() {
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--sbi-blue)]/10 text-[var(--sbi-royal)] transition group-hover:bg-[var(--sbi-blue)] group-hover:text-white">
                 <a.icon className="h-5 w-5" />
               </div>
-              <span className="text-xs font-medium">{a.label}</span>
+              <span className="text-xs font-medium">{t(a.key, a.label)}</span>
             </button>
           ))}
         </div>
@@ -753,10 +763,7 @@ function HomePage() {
           <div className="w-full max-w-md rounded-3xl border border-slate-100 bg-white p-6 shadow-2xl animate-[slideUp_0.3s_ease-out]">
             <h2 className="text-xl font-bold text-[var(--sbi-navy)] mb-4">Transfer Money</h2>
             <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                transferMutation.mutate();
-              }}
+              onSubmit={handleTransferSubmit}
               className="space-y-4"
             >
               <div>
@@ -825,10 +832,7 @@ function HomePage() {
           <div className="w-full max-w-md rounded-3xl border border-slate-100 bg-white p-6 shadow-2xl animate-[slideUp_0.3s_ease-out]">
             <h2 className="text-xl font-bold text-[var(--sbi-navy)] mb-4">Pay Utility Bills</h2>
             <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                payBillMutation.mutate();
-              }}
+              onSubmit={handlePayBillSubmit}
               className="space-y-4"
             >
               <div>
@@ -898,10 +902,7 @@ function HomePage() {
             <h2 className="text-xl font-bold text-[var(--sbi-navy)] mb-2">Scan & Pay QR</h2>
             <p className="text-xs text-muted-foreground mb-4">Simulate QR scan payment below.</p>
             <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                scanPayMutation.mutate();
-              }}
+              onSubmit={handleScanPaySubmit}
               className="space-y-4"
             >
               {/* QR Camera Placeholder */}

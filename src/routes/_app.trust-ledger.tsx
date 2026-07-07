@@ -15,6 +15,7 @@ import {
 import { PageHeader, SignalChip } from "@/components/app-shell";
 import { trustLedgerApi } from "@/lib/api";
 import { AIRecommendation, Explainability } from "../types/api";
+import { useTranslation } from "@/lib/translations";
 
 interface MappedLedgerEntry {
   id: string;
@@ -931,6 +932,7 @@ export const Route = createFileRoute("/_app/trust-ledger")({
 });
 
 function LedgerPage() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [activeTab, setActiveTab] = useState<Record<string, "audit" | "replay">>({});
@@ -991,16 +993,20 @@ function LedgerPage() {
     let trust = confidence >= 85 ? "+12" : confidence >= 75 ? "+6" : "+2";
 
     const titleLower = r.title.toLowerCase();
+    let displayTitle = r.title;
+
     if (titleLower.includes("sip")) {
       signals = ["SIP momentum", "Salary hike", "discretionary spend"];
       outcome = "Acknowledged";
       feedback = "Acknowledged";
       trust = "+6";
+      displayTitle = t("trust_ledger.home_purchase_rec", "Home Purchase Recommendation");
     } else if (titleLower.includes("home")) {
       signals = ["SIP momentum", "Savings velocity", "Property browsing", "Stable income"];
       outcome = "Customer Reviewed";
       feedback = "Acted on";
       trust = "+12";
+      displayTitle = t("trust_ledger.home_purchase_rec", "Home Purchase Recommendation");
     } else if (titleLower.includes("credit")) {
       signals = ["Utilisation rising", "On-time history"];
       outcome = "Declined by customer";
@@ -1011,16 +1017,18 @@ function LedgerPage() {
       outcome = isHumanApproved ? "Customer Reviewed" : "Auto-applied";
       feedback = "Acted on";
       trust = "+12";
+      displayTitle = t("trust_ledger.wedding_planner", "Wedding Planner");
     } else if (titleLower.includes("trip") || titleLower.includes("travel") || titleLower.includes("vacation") || titleLower.includes("paris")) {
       signals = ["Forex rate alert", "Sweep status", "Travel budget goal"];
       outcome = isHumanApproved ? "Customer Reviewed" : "Auto-applied";
       feedback = "Acted on";
       trust = "+12";
+      displayTitle = t("trust_ledger.international_trip", "International Trip");
     }
 
     return {
       id: `rec-${r.id}`,
-      title: r.title,
+      title: displayTitle,
       when:
         new Date(r.timestamp).toLocaleDateString("en-IN") +
         " · " +
@@ -1038,31 +1046,39 @@ function LedgerPage() {
     };
   });
 
-  const list = entries.filter((e: MappedLedgerEntry) => {
-    const titleLower = e.title.toLowerCase();
-    const reasonLower = e.reason.toLowerCase();
-    
-    // Filter out mock test run logs so they don't pollute the user's ledger screen
-    if (
-      titleLower.includes("message") || 
-      titleLower.includes("test") || 
-      titleLower.includes("timeout") || 
-      titleLower.includes("rate limit") || 
-      titleLower.includes("malformed") ||
-      reasonLower.includes("chat answer")
-    ) {
-      return false;
-    }
-    
-    return titleLower.includes(q.toLowerCase());
-  });
+  const list = (() => {
+    const categorySeen = new Set<string>();
+    return entries.filter((e: MappedLedgerEntry) => {
+      const titleLower = e.title.toLowerCase();
+
+      let category = "";
+      if (titleLower.includes("home") || titleLower.includes("purchase")) {
+        category = "home";
+      } else if (titleLower.includes("wedding") || titleLower.includes("marriage") || titleLower.includes("planner")) {
+        category = "wedding";
+      } else if (titleLower.includes("trip") || titleLower.includes("travel") || titleLower.includes("vacation") || titleLower.includes("paris") || titleLower.includes("international")) {
+        category = "trip";
+      }
+
+      if (!category) {
+        return false;
+      }
+
+      if (categorySeen.has(category)) {
+        return false;
+      }
+      categorySeen.add(category);
+
+      return e.title.toLowerCase().includes(q.toLowerCase());
+    });
+  })();
 
   return (
     <div>
       <PageHeader
-        eyebrow="Trust Ledger"
-        title="Every decision, on the record."
-        subtitle="An immutable, customer-readable log of every recommendation the AI made — with the why, the alternatives, and the outcome."
+        eyebrow={t("menu.trust_ledger")}
+        title={t("trust_ledger.title")}
+        subtitle={t("trust_ledger.subtitle")}
       />
 
       <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -1071,12 +1087,12 @@ function LedgerPage() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search recommendations..."
+            placeholder={t("trust_ledger.search")}
             className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm outline-none focus:border-[var(--sbi-blue)]"
           />
         </div>
         <button className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-3 py-2 text-sm font-medium">
-          <Filter className="h-3.5 w-3.5" /> All
+          <Filter className="h-3.5 w-3.5" /> {t("life_events.all_events", "All")}
         </button>
       </div>
 
@@ -1123,9 +1139,9 @@ function LedgerPage() {
                       </div>
                     </div>
 
-                    <Stat label="Outcome" value={e.outcome} tone="success" />
+                    <Stat label={t("trust_ledger.outcome_label", "Outcome")} value={e.outcome} tone="success" />
                     <Stat
-                      label="Trust Impact"
+                      label={t("trust_ledger.trust_score")}
                       value={e.trust}
                       tone={e.trust.startsWith("+") ? "success" : "error"}
                     />
@@ -1140,7 +1156,7 @@ function LedgerPage() {
                       }}
                       className={`inline-flex items-center gap-1 text-xs font-semibold ${isOpen && tab === "audit" ? "text-[var(--sbi-blue)]" : "text-muted-foreground hover:text-[var(--sbi-blue)]"}`}
                     >
-                      {isOpen && tab === "audit" ? "Collapse details" : "Expand details"}
+                      {isOpen && tab === "audit" ? t("offers.hide_details") : t("offers.why_seeing")}
                       <ChevronDown className={`h-3 w-3 transition ${isOpen && tab === "audit" ? "rotate-180" : ""}`} />
                     </button>
                     <button
@@ -1150,7 +1166,7 @@ function LedgerPage() {
                       }}
                       className={`inline-flex items-center gap-1.5 text-xs font-semibold ${isOpen && tab === "replay" ? "text-amber-600 font-bold" : "text-muted-foreground hover:text-amber-600"}`}
                     >
-                      <Play className="h-3 w-3" /> Replay Decision
+                      <Play className="h-3 w-3" /> {t("trust_ledger.replay_decision", "Replay Decision")}
                     </button>
                   </div>
 
@@ -1173,7 +1189,7 @@ function LedgerPage() {
                               <Shield className="h-5 w-5" />
                             </div>
                             <div>
-                              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Decision Identity</div>
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("trust_ledger.decision_identity", "Decision Identity")}</div>
                               <div className="flex items-center gap-2 mt-0.5">
                                 <span className="font-mono text-xs font-bold text-slate-700">{e.explainability.identity.decision_id}</span>
                                 <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
@@ -1196,32 +1212,32 @@ function LedgerPage() {
                           <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
                               <div className="h-1.5 w-3 rounded-full bg-emerald-500" />
-                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Financial Impact Meter</h4>
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("trust_ledger.impact_meter", "Financial Impact Meter")}</h4>
                             </div>
                             <div className="grid gap-3 sm:grid-cols-2">
                               <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
-                                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Estimated Savings</div>
+                                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{t("offers.estimated_savings", "Estimated Savings")}</div>
                                 <div className="text-base font-extrabold text-[var(--sbi-navy)] mt-0.5">{e.explainability.impact_metrics.savings}</div>
                                 <div className="w-full bg-slate-200 h-1.5 rounded-full mt-2.5 overflow-hidden">
                                   <div className="bg-emerald-500 h-full rounded-full animate-grow-bar" style={{ width: `${e.explainability.impact_metrics.savings_progress}%` }} />
                                 </div>
                               </div>
                               <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
-                                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Goal Acceleration</div>
+                                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{t("life_events.time_horizon", "Goal Acceleration")}</div>
                                 <div className="text-base font-extrabold text-[var(--sbi-navy)] mt-0.5">{e.explainability.impact_metrics.goal_acceleration}</div>
                                 <div className="w-full bg-slate-200 h-1.5 rounded-full mt-2.5 overflow-hidden">
                                   <div className="bg-blue-500 h-full rounded-full animate-grow-bar" style={{ width: `${e.explainability.impact_metrics.acceleration_progress}%` }} />
                                 </div>
                               </div>
                               <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
-                                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Risk Reduction</div>
+                                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{t("trust_ledger.why_not", "Risk Reduction")}</div>
                                 <div className="text-base font-extrabold text-[var(--sbi-navy)] mt-0.5">{e.explainability.impact_metrics.risk_reduction}</div>
                                 <div className="w-full bg-slate-200 h-1.5 rounded-full mt-2.5 overflow-hidden">
                                   <div className="bg-amber-500 h-full rounded-full animate-grow-bar" style={{ width: `${e.explainability.impact_metrics.risk_progress}%` }} />
                                 </div>
                               </div>
                               <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
-                                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Projected Wealth Growth</div>
+                                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{t("dashboard.net_worth", "Projected Wealth Growth")}</div>
                                 <div className="text-base font-extrabold text-emerald-600 mt-0.5">{e.explainability.impact_metrics.expected_wealth_growth}</div>
                                 <div className="w-full bg-slate-200 h-1.5 rounded-full mt-2.5 overflow-hidden">
                                   <div className="bg-emerald-600 h-full rounded-full animate-grow-bar" style={{ width: `${e.explainability.impact_metrics.wealth_progress}%` }} />
@@ -1234,7 +1250,7 @@ function LedgerPage() {
                           <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
                               <div className="h-1.5 w-3 rounded-full bg-indigo-500" />
-                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">AI Recommendation Quality Scorecard</h4>
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("trust_ledger.quality_scorecard", "AI Recommendation Quality Scorecard")}</h4>
                             </div>
                             <div className="space-y-3">
                               <div className="flex items-center justify-between text-xs border-b border-slate-100 pb-2">
@@ -1295,7 +1311,7 @@ function LedgerPage() {
                           <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
                               <div className="h-1.5 w-3 rounded-full bg-blue-500" />
-                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">AI Decision Replay Pipeline</h4>
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("trust_ledger.replay_pipeline", "AI Decision Replay Pipeline")}</h4>
                             </div>
                             <div className="relative pl-5 space-y-4">
                               <div className="absolute left-2 top-2 bottom-2 w-px bg-slate-200" />
@@ -1316,7 +1332,7 @@ function LedgerPage() {
                           <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
                               <div className="h-1.5 w-3 rounded-full bg-rose-500" />
-                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Why Not? Rejected Alternatives</h4>
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("trust_ledger.why_not")}</h4>
                             </div>
                             <div className="overflow-x-auto">
                               <table className="w-full text-left text-xs border-collapse">
@@ -1359,7 +1375,7 @@ function LedgerPage() {
                           <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
                               <div className="h-1.5 w-3 rounded-full bg-amber-500" />
-                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">AI Deliberation Board</h4>
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("trust_ledger.agents")}</h4>
                             </div>
                             <div className="space-y-3">
                               {e.explainability.agent_deliberation.agents.map((del, idx) => {
@@ -1385,7 +1401,7 @@ function LedgerPage() {
                                 );
                               })}
                               <div className="flex items-center justify-between rounded-xl bg-slate-100 p-3 mt-4 border border-slate-200">
-                                <span className="text-xs font-semibold text-slate-600">Final Consensus:</span>
+                                <span className="text-xs font-semibold text-slate-600">{t("trust_ledger.consensus", "Final Consensus")}:</span>
                                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-xs font-extrabold text-white">
                                   <CheckCircle2 className="h-3.5 w-3.5" />
                                   {e.explainability.agent_deliberation.consensus}
@@ -1398,7 +1414,7 @@ function LedgerPage() {
                           <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
                               <div className="h-1.5 w-3 rounded-full bg-indigo-500" />
-                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Counterfactual Simulator — What if I chose differently?</h4>
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("trust_ledger.counterfactual")}</h4>
                             </div>
                             <div className="space-y-3">
                               {e.explainability.counterfactuals.map((cf, idx) => (
@@ -1440,7 +1456,7 @@ function LedgerPage() {
                           <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
                               <div className="h-1.5 w-3 rounded-full bg-sky-500" />
-                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Confidence Sources</h4>
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("trust_ledger.confidence_sources", "Confidence Sources")}</h4>
                             </div>
                             <div className="space-y-3.5">
                               <div>
@@ -1495,7 +1511,7 @@ function LedgerPage() {
                           <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
                               <div className="h-1.5 w-3 rounded-full bg-emerald-500" />
-                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Evidence Signals Used</h4>
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("trust_ledger.signals", "Evidence Signals Used")}</h4>
                             </div>
                             <div className="space-y-4">
                               {e.explainability.evidence_used.map((cat, idx) => (
@@ -1519,21 +1535,21 @@ function LedgerPage() {
                             <div>
                               <div className="flex items-center gap-2 mb-4">
                                 <div className="h-1.5 w-3 rounded-full bg-teal-500" />
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Trust Evolution Score</h4>
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("trust_ledger.trust_score", "Trust Evolution Score")}</h4>
                               </div>
                               <div className="flex items-center justify-center gap-4 bg-slate-50 border border-slate-100 rounded-xl py-5">
                                 <div className="text-center">
-                                  <span className="text-[10px] text-slate-400 block uppercase font-semibold">Before</span>
+                                  <span className="text-[10px] text-slate-400 block uppercase font-semibold">{t("life_events.before", "Before")}</span>
                                   <span className="text-2xl font-extrabold text-slate-500 mt-0.5 block">{e.explainability.trust_evolution.before}</span>
                                 </div>
                                 <div className="text-slate-300 font-mono text-xl">→</div>
                                 <div className="text-center">
-                                  <span className="text-[10px] text-slate-400 block uppercase font-semibold">After</span>
+                                  <span className="text-[10px] text-slate-400 block uppercase font-semibold">{t("life_events.after", "After")}</span>
                                   <span className="text-2xl font-extrabold text-[var(--sbi-blue)] mt-0.5 block">{e.explainability.trust_evolution.after}</span>
                                 </div>
                                 <div className="h-8 w-px bg-slate-200" />
                                 <div className="text-center">
-                                  <span className="text-[10px] text-slate-400 block uppercase font-semibold">Delta</span>
+                                  <span className="text-[10px] text-slate-400 block uppercase font-semibold">{t("life_events.delta", "Delta")}</span>
                                   <span className="text-lg font-bold text-emerald-600 mt-0.5 block bg-emerald-50 border border-emerald-100 px-2 rounded-full">
                                     {e.explainability.trust_evolution.change}
                                   </span>

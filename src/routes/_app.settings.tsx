@@ -19,6 +19,7 @@ import { PageHeader, GlassCard } from "@/components/app-shell";
 import { settingsApi } from "@/lib/api";
 import { Settings } from "../types/api";
 import { toast } from "sonner";
+import { useTranslation, LANGUAGES_LIST } from "@/lib/translations";
 
 function SettingsErrorFallback({ error, reset }: { error: Error; reset: () => void }) {
   return (
@@ -54,6 +55,7 @@ export const Route = createFileRoute("/_app/settings")({
 
 function SettingsPage() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
   // Fetch Settings
   const {
@@ -131,33 +133,33 @@ function SettingsPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <PageHeader
-        eyebrow="Settings"
-        title="Stay in control."
-        subtitle="Privacy, AI, notifications — all on your terms."
+        eyebrow={t("menu.settings")}
+        title={t("settings.title")}
+        subtitle={t("settings.subtitle")}
       />
 
       <GlassCard className="p-0">
-        <Row icon={User} label="Profile & Preferences" sub="Name, contact, photo" />
-        <Row icon={Lock} label="Privacy & Consent" sub="Manage data sharing" />
-        <Row icon={Bot} label="AI Preferences" sub="Choose how proactive the AI is" />
+        <Row icon={User} label={t("settings.profile")} sub={t("settings.profile_sub")} />
+        <Row icon={Lock} label={t("settings.privacy")} sub={t("settings.privacy_sub")} />
+        <Row icon={Bot} label={t("settings.ai_pref")} sub={t("settings.ai_pref_sub")} />
         <Row
           icon={Bell}
-          label="Notifications"
-          sub="Push, email and SMS"
+          label={t("settings.notifications")}
+          sub={t("settings.notifications_sub")}
           toggle
           value={settings.notifications_enabled}
           onToggle={handleToggleNotif}
         />
-        <Row icon={Link2} label="Connected Accounts" sub="HDFC, Axis, Karvy" />
+        <Row icon={Link2} label={t("settings.connected")} sub={t("settings.connected_sub")} />
         <Row
           icon={UserCheck}
-          label="Human Review Preferences"
-          sub="When should an advisor weigh in?"
+          label={t("settings.human_review")}
+          sub={t("settings.human_review_sub")}
         />
         <Row
           icon={Gauge}
-          label="Self-Throttling (AI)"
-          sub="AI quiets down when you ignore suggestions"
+          label={t("settings.throttling")}
+          sub={t("settings.throttling_sub")}
           toggle
           value={settings.biometrics_enabled}
           onToggle={handleToggleBiometrics}
@@ -165,10 +167,27 @@ function SettingsPage() {
         />
         <Row
           icon={Languages}
-          label="Language"
-          sub={`${settings.language} (India)`}
-          rightLabel={settings.language}
-        />
+          label={t("settings.language")}
+          sub={t("settings.language_sub")}
+        >
+          <select
+            value={settings.language}
+            onChange={(e) => {
+              updateSettingsMutation.mutate({
+                language: e.target.value,
+                notifications_enabled: settings.notifications_enabled,
+                biometrics_enabled: settings.biometrics_enabled,
+              });
+            }}
+            className="rounded-xl border border-border bg-white px-3 py-1.5 text-xs font-semibold text-[var(--sbi-navy)] outline-none focus:border-[var(--sbi-blue)] cursor-pointer"
+          >
+            {LANGUAGES_LIST.map((lang) => (
+              <option key={lang.code} value={lang.code}>
+                {lang.name}
+              </option>
+            ))}
+          </select>
+        </Row>
       </GlassCard>
 
       <div className="mt-6 rounded-3xl border border-[var(--sbi-blue)]/20 bg-[var(--sbi-blue)]/5 p-5">
@@ -197,6 +216,7 @@ function Row({
   value,
   onToggle,
   rightLabel,
+  children,
 }: {
   icon: LucideIcon;
   label: string;
@@ -205,6 +225,7 @@ function Row({
   value?: boolean;
   onToggle?: (v: boolean) => void;
   rightLabel?: string;
+  children?: React.ReactNode;
 }) {
   return (
     <div className="flex items-center justify-between border-b border-border p-4 last:border-0 hover:bg-slate-50/50 transition">
@@ -219,24 +240,30 @@ function Row({
       </div>
 
       <div className="flex items-center gap-2">
-        {rightLabel && (
-          <span className="text-xs text-muted-foreground font-medium mr-1">{rightLabel}</span>
-        )}
-        {toggle ? (
-          <button
-            onClick={() => onToggle?.(!value)}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-              value ? "bg-[var(--sbi-blue)]" : "bg-slate-200"
-            }`}
-          >
-            <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                value ? "translate-x-5" : "translate-x-0"
-              }`}
-            />
-          </button>
+        {children ? (
+          children
         ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
+          <>
+            {rightLabel && (
+              <span className="text-xs text-muted-foreground font-medium mr-1">{rightLabel}</span>
+            )}
+            {toggle ? (
+              <button
+                onClick={() => onToggle?.(!value)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  value ? "bg-[var(--sbi-blue)]" : "bg-slate-200"
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    value ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
+            )}
+          </>
         )}
       </div>
     </div>

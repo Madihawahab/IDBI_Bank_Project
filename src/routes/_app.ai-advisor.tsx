@@ -4,6 +4,7 @@ import { Send, Sparkles, ChevronDown, Shield, Bot, UserCheck } from "lucide-reac
 import { TrustBadge, SignalChip } from "@/components/app-shell";
 import { useMutation } from "@tanstack/react-query";
 import { aiAdvisorApi } from "@/lib/api";
+import { useTranslation } from "@/lib/translations";
 
 export const Route = createFileRoute("/_app/ai-advisor")({
   head: () => ({
@@ -64,6 +65,7 @@ const suggestions = [
 ];
 
 function AdvisorPage() {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<Msg[]>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("idbi_chat_history");
@@ -197,10 +199,10 @@ function AdvisorPage() {
             <Bot className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[var(--sbi-navy)]">AI Advisor</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[var(--sbi-navy)]">{t("menu.ai_advisor")}</h1>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
-              Always here to help
+              {t("ai_advisor.subtitle", "Always here to help")}
             </div>
           </div>
         </div>
@@ -208,7 +210,7 @@ function AdvisorPage() {
           onClick={() => resetChatMutation.mutate()}
           className="rounded-full border border-border bg-white px-4 py-1.5 text-sm font-medium hover:bg-slate-50 transition"
         >
-          Reset Chat
+          {t("ai_advisor.reset")}
         </button>
       </div>
 
@@ -236,26 +238,26 @@ function AdvisorPage() {
                     <>
                       {m.detailed.humanReview && (
                         <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--warning)]/10 px-2.5 py-1 text-[11px] font-semibold text-[var(--warning)]">
-                          <UserCheck className="h-3 w-3" /> Requires Relationship Manager Review
+                          <UserCheck className="h-3 w-3" /> {t("settings.human_review", "RM Review Required")}
                         </div>
                       )}
 
                       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                         <Stat
-                          label="Confidence"
+                          label={t("offers.match", "Confidence")}
                           value={`${m.detailed.confidence}%`}
                           tone="success"
                         />
-                        <Stat label="Signals" value={`${m.detailed.signals.length}`} tone="blue" />
-                        <Stat label="Alternatives" value="2" tone="blue" />
-                        <Stat label="Trust" value="High" tone="success" />
+                        <Stat label={t("offers.signals", "Signals")} value={`${m.detailed.signals.length}`} tone="blue" />
+                        <Stat label={t("trust_ledger.why_not", "Alternatives")} value="2" tone="blue" />
+                        <Stat label={t("trust_ledger.trust_score", "Trust")} value="High" tone="success" />
                       </div>
 
                       <button
                         onClick={() => setExpanded(expanded === i ? null : i)}
                         className="mt-4 flex items-center gap-1 text-xs font-semibold text-[var(--sbi-blue)]"
                       >
-                        {expanded === i ? "Hide reasoning" : "Show reasoning"}
+                        {expanded === i ? t("offers.hide_details") : t("offers.why_seeing")}
                         <ChevronDown
                           className={`h-3 w-3 transition ${expanded === i ? "rotate-180" : ""}`}
                         />
@@ -263,17 +265,17 @@ function AdvisorPage() {
 
                       {expanded === i && (
                         <div className="mt-3 space-y-3 rounded-2xl bg-[var(--sbi-sky)] p-4">
-                          <Section title="Observed Signals">
+                          <Section title={t("offers.signals", "Observed Signals")}>
                             <div className="flex flex-wrap gap-1.5">
                               {m.detailed.signals.map((s) => (
                                 <SignalChip key={s}>{s}</SignalChip>
                               ))}
                             </div>
                           </Section>
-                          <Section title="Reasoning">
+                          <Section title={t("offers.recommendation", "Reasoning")}>
                             <p className="text-sm text-foreground/80">{m.detailed.reasoning}</p>
                           </Section>
-                          <Section title="Alternative Possibilities">
+                          <Section title={t("trust_ledger.why_not", "Alternative Possibilities")}>
                             <p className="text-sm text-foreground/80">{m.detailed.alternatives}</p>
                           </Section>
                         </div>
@@ -343,7 +345,7 @@ function AdvisorPage() {
               }
             }}
             disabled={chatMutation.isPending || isThinking}
-            placeholder="Ask me anything about your finances..."
+            placeholder={t("ai_advisor.placeholder", "Ask me anything about your finances...")}
             rows={1}
             className="flex-1 rounded-2xl bg-muted/50 px-4 py-2 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-[var(--sbi-blue)]/30 resize-none max-h-24 overflow-y-auto disabled:opacity-50"
           />

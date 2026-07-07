@@ -5,6 +5,7 @@ import { GlassCard } from "@/components/app-shell";
 import { useQuery } from "@tanstack/react-query";
 import { moneyMoodApi } from "@/lib/api";
 import { MoneyMood } from "../types/api";
+import { useTranslation } from "@/lib/translations";
 
 function MoneyMoodErrorFallback({ error, reset }: { error: Error; reset: () => void }) {
   return (
@@ -49,6 +50,7 @@ const days = [
 ];
 
 function MoodPage() {
+  const { t } = useTranslation();
   const [modalOpen, setModalOpen] = useState(false);
   const [explanation, setExplanation] = useState<{ why: string; how: string[] } | null>(null);
   const [explLoading, setExplLoading] = useState(false);
@@ -125,10 +127,10 @@ function MoodPage() {
     <div className="mx-auto max-w-3xl space-y-8">
       <div className="text-center">
         <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--sbi-blue)]">
-          Money Mood
+          {t("menu.money_mood")}
         </div>
         <h1 className="text-balance text-3xl font-bold tracking-tight text-[var(--sbi-navy)] sm:text-4xl">
-          You are in {label}
+          {t("money_mood.title")} {label === "Calm Mode" ? t("money_mood.stay_calm", "Calm Mode") : label}
         </h1>
         <p className="mt-3 text-base text-muted-foreground">
           {insight}
@@ -162,15 +164,15 @@ function MoodPage() {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <div className="text-7xl">{emoji}</div>
-            <div className="mt-1 text-sm font-semibold text-muted-foreground">{label}</div>
-            <div className="mt-0.5 text-xs text-muted-foreground">{value}/100 wellness</div>
+            <div className="mt-1 text-sm font-semibold text-muted-foreground">{label === "Calm Mode" ? t("money_mood.stay_calm", "Calm Mode") : label}</div>
+            <div className="mt-0.5 text-xs text-muted-foreground">{value}/100 {t("money_mood.wellness")}</div>
           </div>
         </div>
       </div>
 
       <GlassCard>
         <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Mood History
+          {t("money_mood.history")}
         </div>
         <div className="flex h-32 items-end gap-3">
           {days.map((d, i) => (
@@ -191,7 +193,7 @@ function MoodPage() {
       <div className="grid gap-4 sm:grid-cols-2">
         <GlassCard>
           <div className="flex items-center gap-2 text-sm font-semibold text-[var(--success)]">
-            <ThumbsUp className="h-4 w-4" /> Positive Habits
+            <ThumbsUp className="h-4 w-4" /> {t("money_mood.positive_habits")}
           </div>
           <ul className="mt-3 space-y-2 text-sm text-foreground/80">
             {data?.positive_habits?.map((h: string, i: number) => (
@@ -207,7 +209,7 @@ function MoodPage() {
         </GlassCard>
         <GlassCard>
           <div className="flex items-center gap-2 text-sm font-semibold text-[var(--warning)]">
-            <ThumbsDown className="h-4 w-4" /> Watch Out
+            <ThumbsDown className="h-4 w-4" /> {t("money_mood.watch_out")}
           </div>
           <ul className="mt-3 space-y-2 text-sm text-foreground/80">
             {data?.watch_out?.map((w: string, i: number) => (
@@ -230,10 +232,10 @@ function MoodPage() {
           </div>
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--sbi-blue)]">
-              <TrendingUp className="h-3 w-3" /> Future You
+              <TrendingUp className="h-3 w-3" /> {t("money_mood.future_you")}
             </div>
             <div className="mt-1 text-lg font-bold text-[var(--sbi-navy)]">
-              {data?.future_you_title ?? `Stay in ${label} for 3 more months`}
+              {data?.future_you_title ?? `${t("money_mood.stay_calm")} for 3 more months`}
             </div>
             <p className="mt-1.5 text-sm text-muted-foreground">
               {data?.future_you_desc ?? "You'll unlock a ₹38,000 buffer and your retirement readiness moves from 64% → 71%."}
@@ -242,7 +244,7 @@ function MoodPage() {
               onClick={handleSeeHowClick}
               className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[var(--sbi-blue)] cursor-pointer hover:underline hover:opacity-85 transition-all"
             >
-              See how <ArrowRight className="h-3.5 w-3.5" />
+              {t("offers.why_seeing", "See how")} <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
@@ -258,7 +260,7 @@ function MoodPage() {
                   <Sparkles className="h-4 w-4 text-white" />
                 </div>
                 <h3 className="font-bold text-[var(--sbi-navy)] dark:text-white">
-                  Future You Strategy
+                  {t("money_mood.future_you")} Strategy
                 </h3>
               </div>
               <button
@@ -295,7 +297,7 @@ function MoodPage() {
                 <div className="space-y-4">
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--sbi-blue)] mb-1.5">
-                      Why it matters
+                      {t("offers.why_seeing", "Why it matters")}
                     </h4>
                     <p className="text-sm text-foreground/80 leading-relaxed">
                       {explanation.why}
@@ -303,7 +305,7 @@ function MoodPage() {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--sbi-blue)] mb-2">
-                      How to achieve it
+                      {t("life_events.apply_rec", "How to achieve it")}
                     </h4>
                     <ul className="space-y-2.5">
                       {explanation.how.map((tip, i) => (
@@ -324,7 +326,7 @@ function MoodPage() {
                 onClick={() => setModalOpen(false)}
                 className="rounded-full bg-[var(--sbi-blue)] px-6 py-2 text-sm font-semibold text-white shadow-md hover:bg-[var(--sbi-royal)] transition-all cursor-pointer"
               >
-                Got it
+                {t("life_events.applied", "Got it")}
               </button>
             </div>
           </div>

@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/translations";
 
 interface MappedLifeEvent {
   id: string;
@@ -86,6 +87,7 @@ const filters = ["All Events", "Upcoming", "On Track", "Completed"];
 function LifeEventsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const [filter, setFilter] = useState("Upcoming");
   const [open, setOpen] = useState<string | null>("1"); // Set first event open by default
 
@@ -307,33 +309,41 @@ function LifeEventsPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Life Events"
-        title="AI predicts. You plan. We partner."
-        subtitle="Major life moments we see ahead, with the signals we used and the financial readiness to meet them."
+        eyebrow={t("menu.life_events")}
+        title={t("life_events.title", "AI predicts. You plan. We partner.")}
+        subtitle={t("life_events.subtitle", "Major life moments we see ahead, with the signals we used and the financial readiness to meet them.")}
         action={
           <button
             onClick={() => setIsAddOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-full bg-[var(--sbi-blue)] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(0,173,239,0.6)] transition hover:opacity-95"
           >
-            <Plus className="h-4 w-4" /> Add Goal
+            <Plus className="h-4 w-4" /> {t("life_events.add_event", "Add Goal")}
           </button>
         }
       />
 
       <div className="mb-6 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-        {filters.map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition ${
-              filter === f
-                ? "bg-[var(--sbi-blue)] text-white shadow-[0_6px_16px_-6px_rgba(0,173,239,0.6)]"
-                : "bg-white text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {f}
-          </button>
-        ))}
+        {filters.map((f) => {
+          const filterKeys: Record<string, string> = {
+            "All Events": "life_events.all_events",
+            "Upcoming": "life_events.upcoming",
+            "On Track": "life_events.on_track",
+            "Completed": "life_events.completed"
+          };
+          return (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                filter === f
+                  ? "bg-[var(--sbi-blue)] text-white shadow-[0_6px_16px_-6px_rgba(0,173,239,0.6)]"
+                  : "bg-white text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t(filterKeys[f] || f, f)}
+            </button>
+          );
+        })}
       </div>
 
       <div className="space-y-4">
@@ -381,7 +391,7 @@ function LifeEventsPage() {
                       <div className="mt-4">
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-medium text-muted-foreground">
-                            Financial Readiness
+                            {t("life_events.savings_target", "Financial Readiness")}
                           </span>
                           <span className="font-bold text-[var(--sbi-royal)]">{e.readiness}%</span>
                         </div>
@@ -396,7 +406,7 @@ function LifeEventsPage() {
 
                     <div className="flex flex-col items-center gap-2">
                       <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Confidence
+                        {t("offers.match", "Confidence")}
                       </div>
                       <ConfidenceRing value={e.confidence} size={68} />
                     </div>
@@ -406,7 +416,7 @@ function LifeEventsPage() {
                     onClick={() => setOpen(isOpen ? null : e.id)}
                     className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-[var(--sbi-blue)]"
                   >
-                    {isOpen ? "Hide Details" : "View Details"}
+                    {isOpen ? t("offers.hide_details") : t("offers.why_seeing")}
                     <ChevronDown className={`h-4 w-4 transition ${isOpen ? "rotate-180" : ""}`} />
                   </button>
                 </div>
@@ -416,7 +426,7 @@ function LifeEventsPage() {
                     <div className="grid gap-5 sm:grid-cols-2">
                       <div>
                         <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          Observed Signals
+                          {t("offers.signals", "Observed Signals")}
                         </div>
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {e.signals.map((s: string) => (
@@ -427,7 +437,7 @@ function LifeEventsPage() {
 
                       <div>
                         <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          Reasoning
+                          {t("offers.recommendation", "Reasoning")}
                         </div>
                         <p className="mt-2 text-sm leading-relaxed text-foreground/80">
                           {e.reasoning}
@@ -436,7 +446,7 @@ function LifeEventsPage() {
 
                       <div>
                         <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          Alternative Possibilities
+                          {t("trust_ledger.why_not", "Alternative Possibilities")}
                         </div>
                         <p className="mt-2 text-sm leading-relaxed text-foreground/80">
                           {e.alternatives}
@@ -445,7 +455,7 @@ function LifeEventsPage() {
 
                       <div className="rounded-2xl bg-white p-4">
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--sbi-blue)]">
-                          <Sparkles className="h-3 w-3" /> Future You
+                          <Sparkles className="h-3 w-3" /> {t("money_mood.future_you", "Future You")}
                         </div>
                         <p className="mt-2 text-sm leading-relaxed">{e.future}</p>
                       </div>
@@ -458,7 +468,7 @@ function LifeEventsPage() {
                             disabled
                             className="rounded-full bg-emerald-600/10 border border-emerald-600/20 px-4 py-2 text-sm font-semibold text-emerald-600 flex items-center gap-1.5"
                           >
-                            <CheckCircle2 className="h-4 w-4" /> Applied
+                            <CheckCircle2 className="h-4 w-4" /> {t("life_events.applied", "Applied")}
                           </button>
                         ) : (
                           <button
@@ -466,7 +476,7 @@ function LifeEventsPage() {
                             disabled={applyingId === e.id}
                             className="rounded-full bg-[var(--sbi-blue)] px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:opacity-90 disabled:opacity-50"
                           >
-                            {applyingId === e.id ? "Applying..." : "Apply Recommendation"}
+                            {applyingId === e.id ? "Applying..." : t("life_events.apply_rec", "Apply Recommendation")}
                           </button>
                         )
                       )}
@@ -474,7 +484,7 @@ function LifeEventsPage() {
                         onClick={() => handleTalkToAdvisor(e)}
                         className="rounded-full border border-border bg-white px-4 py-2 text-sm font-medium transition hover:bg-slate-50"
                       >
-                        Talk to Advisor
+                        {t("life_events.talk_advisor", "Talk to Advisor")}
                       </button>
                     </div>
                   </div>
