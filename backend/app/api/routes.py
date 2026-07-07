@@ -915,6 +915,46 @@ async def get_money_mood(
     mood_data = MoneyMoodEngine.evaluate_mood(analytics, transactions)
     return mood_data
 
+@router.get("/money-mood/explain-future-you")
+async def explain_future_you(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(Account).filter_by(user_id=current_user.id))
+    accounts = result.scalars().all()
+    
+    from app.models.models import Transaction
+    from sqlalchemy import or_
+    result_tx = await db.execute(
+        select(Transaction)
+        .filter(
+            or_(
+                Transaction.sender_id == current_user.id,
+                Transaction.receiver_id == current_user.id,
+                Transaction.sender_name == current_user.name,
+                Transaction.receiver_name == current_user.name
+            )
+        )
+    )
+    transactions = result_tx.scalars().all()
+    
+    import hashlib
+    seed_source = f"{current_user.id}-{current_user.email.lower()}"
+    seed_int = int(hashlib.sha256(seed_source.encode()).hexdigest(), 16) % (10**8)
+    from app.services.personas import PERSONAS
+    persona_keys = list(PERSONAS.keys())
+    persona_name = persona_keys[seed_int % len(persona_keys)]
+    if current_user.email.lower() == "aarav.sharma@idbi.co.in":
+        persona_name = "Experienced Salaried Employee"
+        
+    from app.services.financial_analytics import FinancialAnalyticsCalculator
+    from app.ai.provider import ai_provider
+    from sqlalchemy import or_
+    
+    analytics = FinancialAnalyticsCalculator.compute_all_metrics(accounts, transactions, persona_name)
+    explanation = await ai_provider.generate_future_you_explanation(current_user.name, persona_name, analytics)
+    return explanation
+
 # 4. Offers
 @router.get("/offers", response_model=List[OfferOut])
 async def get_offers(

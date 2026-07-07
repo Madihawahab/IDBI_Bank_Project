@@ -189,6 +189,11 @@ export interface Offer {
   title: string;
   description: string;
   eligibility: string;
+  headline: string;
+  savings: string;
+  reasoning: string;
+  confidence_score: number;
+  cta_text: string;
 }
 
 export interface Notification {
@@ -241,6 +246,12 @@ export interface MoneyMood {
   spending: MoodDataPoint[];
   investment: MoodDataPoint[];
   mood_score: number;
+  mood_label?: string;
+  personalized_insight?: string;
+  positive_habits?: string[];
+  watch_out?: string[];
+  future_you_title?: string;
+  future_you_desc?: string;
 }
 
 export interface TokenResponse {

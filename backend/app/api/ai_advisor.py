@@ -86,6 +86,10 @@ async def chat_with_advisor(
         topic_title = "Home Purchase Consultation"
     elif "education" in msg_lower or "college" in msg_lower or "school" in msg_lower or "mba" in msg_lower:
         topic_title = "Education Planning Consultation"
+    elif "wedding" in msg_lower or "marriage" in msg_lower:
+        topic_title = "Wedding Fund Allocation Strategy"
+    elif "trip" in msg_lower or "travel" in msg_lower or "vacation" in msg_lower or "paris" in msg_lower or "international" in msg_lower:
+        topic_title = "International Trip Savings Booster"
     elif "sip" in msg_lower or "savings" in msg_lower or "invest" in msg_lower:
         topic_title = "Savings & Investment Advice"
     elif "emergency" in msg_lower or "fd" in msg_lower:

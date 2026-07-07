@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Sparkles, TrendingUp, ThumbsUp, ThumbsDown, ArrowRight, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { Sparkles, TrendingUp, ThumbsUp, ThumbsDown, ArrowRight, AlertCircle, X, Loader2, CheckCircle2 } from "lucide-react";
 import { GlassCard } from "@/components/app-shell";
 import { useQuery } from "@tanstack/react-query";
 import { moneyMoodApi } from "@/lib/api";
@@ -48,6 +49,31 @@ const days = [
 ];
 
 function MoodPage() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [explanation, setExplanation] = useState<{ why: string; how: string[] } | null>(null);
+  const [explLoading, setExplLoading] = useState(false);
+  const [explError, setExplError] = useState<string | null>(null);
+
+  const fetchExplanation = async () => {
+    setExplLoading(true);
+    setExplError(null);
+    try {
+      const res = await moneyMoodApi.explainFutureYou();
+      setExplanation(res);
+    } catch (err: any) {
+      setExplError(err.message || "Failed to load dynamic explanation.");
+    } finally {
+      setExplLoading(false);
+    }
+  };
+
+  const handleSeeHowClick = () => {
+    setModalOpen(true);
+    if (!explanation) {
+      fetchExplanation();
+    }
+  };
+
   // Query Money Mood
   const { data, isLoading, error, refetch } = useQuery<MoneyMood>({
     queryKey: ["money-mood"],
@@ -212,12 +238,98 @@ function MoodPage() {
             <p className="mt-1.5 text-sm text-muted-foreground">
               {data?.future_you_desc ?? "You'll unlock a ₹38,000 buffer and your retirement readiness moves from 64% → 71%."}
             </p>
-            <button className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[var(--sbi-blue)]">
+            <button
+              onClick={handleSeeHowClick}
+              className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[var(--sbi-blue)] cursor-pointer hover:underline hover:opacity-85 transition-all"
+            >
               See how <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
       </GlassCard>
+
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/20 bg-white/95 p-6 shadow-2xl backdrop-blur-md animate-[scaleUp_0.3s_cubic-bezier(0.34,1.56,0.64,1)] dark:bg-slate-900/95">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--sbi-blue)] to-[var(--sbi-royal)]">
+                  <Sparkles className="h-4 w-4 text-white" />
+                </div>
+                <h3 className="font-bold text-[var(--sbi-navy)] dark:text-white">
+                  Future You Strategy
+                </h3>
+              </div>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="rounded-full p-1 text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="mt-4 space-y-4">
+              {explLoading ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                  <Loader2 className="h-10 w-10 animate-spin text-[var(--sbi-blue)]" />
+                  <p className="text-sm font-medium text-muted-foreground animate-pulse">
+                    Analyzing financial status and generating personalized advice...
+                  </p>
+                </div>
+              ) : explError ? (
+                <div className="rounded-2xl bg-red-50 p-4 text-center dark:bg-red-950/20">
+                  <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+                    {explError}
+                  </p>
+                  <button
+                    onClick={fetchExplanation}
+                    className="mt-3 rounded-full bg-red-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-red-700 cursor-pointer"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : explanation ? (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--sbi-blue)] mb-1.5">
+                      Why it matters
+                    </h4>
+                    <p className="text-sm text-foreground/80 leading-relaxed">
+                      {explanation.why}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--sbi-blue)] mb-2">
+                      How to achieve it
+                    </h4>
+                    <ul className="space-y-2.5">
+                      {explanation.how.map((tip, i) => (
+                        <li key={i} className="flex items-start gap-2.5 text-sm text-foreground/80">
+                          <CheckCircle2 className="h-4.5 w-4.5 shrink-0 text-[var(--success)] mt-0.5" />
+                          <span>{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Footer */}
+            <div className="mt-6 flex justify-end border-t border-slate-100 pt-4 dark:border-slate-800">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="rounded-full bg-[var(--sbi-blue)] px-6 py-2 text-sm font-semibold text-white shadow-md hover:bg-[var(--sbi-royal)] transition-all cursor-pointer"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

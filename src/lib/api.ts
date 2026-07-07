@@ -179,6 +179,10 @@ export const moneyMoodApi = {
     const { data } = await api.get<MoneyMood>("/money-mood");
     return data;
   },
+  explainFutureYou: async (): Promise<{ why: string; how: string[] }> => {
+    const { data } = await api.get<{ why: string; how: string[] }>("/money-mood/explain-future-you");
+    return data;
+  },
 };
 
 export const offersApi = {

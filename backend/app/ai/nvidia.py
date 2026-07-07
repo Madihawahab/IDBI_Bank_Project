@@ -218,3 +218,70 @@ class NVIDIAAIProvider:
         except Exception as e:
             logger.error("NVIDIA NIM streaming error: %s", str(e))
             yield f"Streaming error: {str(e)}"
+
+    async def generate_future_you_explanation(
+        self,
+        user_name: str,
+        persona_name: str,
+        analytics: dict
+    ) -> dict:
+        system_instruction = (
+            "You are IDBI Bank's Life Moments AI Advisor, a premium, friendly, and expert financial advisor. "
+            "Your task is to generate a personalized explanation of why and how the user should maintain their 'Calm Mode' "
+            "for the next 3 months, based on their current financial status.\n"
+            "Return a JSON object with exactly two keys:\n"
+            "- 'why': A paragraph explaining the strategic financial reasons (e.g. compound interest, building buffers, upcoming goals) "
+            "why staying calm is critical right now.\n"
+            "- 'how': A list of strings, each being a short, actionable tip tailored to their current financial habits (e.g. rebalancing, trimming creeping subscriptions, "
+            "maintaining their high savings rate) to achieve this Calm Mode milestone.\n"
+            "Be specific to their financial figures and situation. Formatting: Keep paragraphs concise and professional, and use currency formatting in ₹ (Rupees)."
+        )
+        
+        user_prompt = (
+            f"User Profile: {user_name} ({persona_name})\n"
+            f"Financial Status:\n"
+            f"- Total Balance: ₹{analytics.get('total_balance', 0.0):,.2f}\n"
+            f"- Monthly Income: ₹{analytics.get('income_this_month', 85000.0):,.2f}\n"
+            f"- Savings Rate: {analytics.get('savings_rate', 0.2) * 100:.1f}%\n"
+            f"- Credit Card Utilization: {analytics.get('credit_utilization', 0.0) * 100:.1f}%\n"
+            f"- Debt Ratio: {analytics.get('debt_ratio', 0.0) * 100:.1f}%\n"
+            f"- Active Investments: ₹{analytics.get('investments_total', 0.0):,.2f}\n\n"
+            "Please explain why and how they should stay in Calm Mode for 3 more months to unlock their target ₹38,000 buffer and increase retirement readiness from 64% to 71%."
+        )
+
+        fallback_why = (
+            f"Staying in Calm Mode is key to securing your financial milestones. Based on your current "
+            f"liquid balance of ₹{analytics.get('total_balance', 0.0):,.2f} and a solid savings rate of {analytics.get('savings_rate', 0.2) * 100:.1f}%, "
+            f"maintaining this discipline for 3 months will safeguard you against short-term volatility and allow your compound yield "
+            f"to build a robust safety cushion."
+        )
+        fallback_how = [
+            "Maintain your consistent monthly savings sweep to keep your cash flow positive.",
+            f"Keep credit utilization below 15% (currently healthy at {analytics.get('credit_utilization', 0.0) * 100:.1f}%).",
+            "Monitor recurring subscriptions to prevent discretionary leakages from eating into your ₹38,000 buffer target."
+        ]
+        fallback_res = {"why": fallback_why, "how": fallback_how}
+
+        if self.mock_mode:
+            return fallback_res
+
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.4,
+                response_format={"type": "json_object"},
+            )
+            parsed = json.loads(response.choices[0].message.content)
+            why = parsed.get("why", fallback_why)
+            how = parsed.get("how", fallback_how)
+            if isinstance(how, str):
+                how = [h.strip() for h in how.split("\n") if h.strip()]
+            return {"why": why, "how": how}
+        except Exception as e:
+            logger.error("Error generating future you explanation: %s", str(e))
+            return fallback_res
+

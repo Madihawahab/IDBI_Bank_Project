@@ -69,5 +69,38 @@ async def test_auth_and_dashboard():
             }, headers=headers)
             assert update_response.status_code == 200
             assert update_response.json()["language"] == "Hindi"
+            
+            # Clean up settings back to English for future runs
+            await ac.put("/settings", json={
+                "language": "English",
+                "notifications_enabled": True,
+                "biometrics_enabled": False
+            }, headers=headers)
     finally:
         await engine.dispose()
+
+@pytest.mark.asyncio
+async def test_explain_future_you():
+    from app.db.session import engine
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            # Login
+            login_response = await ac.post("/auth/login", json={
+                "email": "aarav.sharma@idbi.co.in",
+                "password": "demo1234"
+            })
+            assert login_response.status_code == 200
+            tokens = login_response.json()
+            headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+            
+            # Request explanation
+            response = await ac.get("/money-mood/explain-future-you", headers=headers)
+            assert response.status_code == 200
+            data = response.json()
+            assert "why" in data
+            assert "how" in data
+            assert isinstance(data["how"], list)
+            assert len(data["how"]) >= 2
+    finally:
+        await engine.dispose()
+

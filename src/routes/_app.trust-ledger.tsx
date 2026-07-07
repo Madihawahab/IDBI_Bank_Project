@@ -1006,6 +1006,16 @@ function LedgerPage() {
       outcome = "Declined by customer";
       feedback = "Declined";
       trust = "-2";
+    } else if (titleLower.includes("wedding") || titleLower.includes("marriage")) {
+      signals = ["SIP momentum", "Savings velocity", "Goal status", "Wedding expenses"];
+      outcome = isHumanApproved ? "Customer Reviewed" : "Auto-applied";
+      feedback = "Acted on";
+      trust = "+12";
+    } else if (titleLower.includes("trip") || titleLower.includes("travel") || titleLower.includes("vacation") || titleLower.includes("paris")) {
+      signals = ["Forex rate alert", "Sweep status", "Travel budget goal"];
+      outcome = isHumanApproved ? "Customer Reviewed" : "Auto-applied";
+      feedback = "Acted on";
+      trust = "+12";
     }
 
     return {

@@ -21,6 +21,7 @@ interface MappedOffer {
   savings: string;
   desc: string;
   why: string;
+  eligibility: string;
   signals: string[];
   confidence: number;
   match: string;
@@ -155,6 +156,7 @@ function OffersPage() {
       savings: o.savings,
       desc: o.description,
       why: o.reasoning,
+      eligibility: o.eligibility,
       signals,
       confidence: o.confidence_score,
       match: `${o.confidence_score}% Match`,
@@ -228,6 +230,11 @@ function OffersPage() {
                     <div>
                       <div className="font-semibold text-[var(--sbi-navy)]">The Recommendation</div>
                       <p className="mt-1 leading-relaxed text-muted-foreground">{o.why}</p>
+                    </div>
+
+                    <div>
+                      <div className="font-semibold text-[var(--sbi-navy)]">Eligibility Criteria</div>
+                      <p className="mt-1 leading-relaxed text-muted-foreground">{o.eligibility}</p>
                     </div>
 
                     <div>

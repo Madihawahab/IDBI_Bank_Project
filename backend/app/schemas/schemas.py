@@ -243,6 +243,11 @@ class OfferOut(BaseModel):
     title: str
     description: str
     eligibility: str
+    headline: str
+    savings: str
+    reasoning: str
+    confidence_score: int
+    cta_text: str
 
     class Config:
         from_attributes = True
