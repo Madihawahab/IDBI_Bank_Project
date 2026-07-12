@@ -101,6 +101,9 @@ function LifeEventsPage() {
   const [applyingId, setApplyingId] = useState<string | null>(null);
   const [appliedIds, setAppliedIds] = useState<string[]>([]);
 
+  // Simulation sweep rate
+  const [sweepRate, setSweepRate] = useState(15000);
+
   // Fetch Predicted Life Events
   const {
     data: eventsData,
@@ -111,6 +114,14 @@ function LifeEventsPage() {
     queryKey: ["life-events"],
     queryFn: lifeEventsApi.getLifeEvents,
   });
+
+  const getShiftedDate = (baseMonthIndex: number, rate: number) => {
+    // baseMonthIndex is months from July 2024 (July 2024 = 0)
+    const baseShift = Math.round((rate - 15000) / 2500); // 2500 per month
+    const finalMonthIndex = Math.max(3, baseMonthIndex - baseShift);
+    const date = new Date(2024, 6 + finalMonthIndex, 1);
+    return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  };
 
   const addGoalMutation = useMutation({
     mutationFn: lifeEventsApi.createLifeEvent,
@@ -165,10 +176,7 @@ function LifeEventsPage() {
   if (isLoading) {
     return (
       <div className="space-y-6 animate-pulse">
-        {/* Header Skeleton */}
         <div className="h-12 w-1/3 bg-slate-200 rounded-2xl" />
-
-        {/* Events Cards Skeletons */}
         <div className="space-y-4">
           <div className="h-44 bg-slate-200 rounded-3xl" />
           <div className="h-44 bg-slate-200 rounded-3xl" />
@@ -230,7 +238,10 @@ function LifeEventsPage() {
 
     // Dynamic signals simulation
     let signals = ["Income stable", "Budget surplus", "Target allocation"];
+    let baseMonthIndex = 20; // Default Home
+
     if (iconKey === "Home") {
+      baseMonthIndex = 20;
       signals = [
         "Rising SIP contributions",
         "Property search browsing",
@@ -238,19 +249,28 @@ function LifeEventsPage() {
         "Mortgage rate research",
       ];
     } else if (iconKey === "GraduationCap") {
+      baseMonthIndex = 26;
       signals = [
         "School fee escalation",
         "Education insurance enquiry",
         "Sukanya deposits",
         "Coaching expenses",
       ];
+    } else if (iconKey === "Plane") {
+      baseMonthIndex = 25;
+    }
+
+    // Shift predicted date dynamically based on sweepRate for upcoming / on track events
+    let dynamicWhen = e.prediction_date;
+    if (status !== "Completed") {
+      dynamicWhen = getShiftedDate(baseMonthIndex, sweepRate);
     }
 
     return {
       id: String(e.id),
       icon: icons[iconKey] || Heart,
       title: e.title,
-      when: e.prediction_date,
+      when: dynamicWhen,
       confidence: e.confidence,
       readiness,
       summary: e.explanation
@@ -321,6 +341,92 @@ function LifeEventsPage() {
           </button>
         }
       />
+
+      {/* Interactive What-If Goal Projection Slider */}
+      <div className="mb-6 rounded-3xl border border-border bg-white p-6 shadow-[var(--shadow-soft)] animate-scaleUp">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h2 className="text-lg font-bold text-[var(--sbi-navy)] flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-[var(--sbi-blue)] animate-pulse" />
+              IDBI Wealth Projection Simulator
+            </h2>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Drag the slider to adjust your monthly **Auto-Sweep rate** and see how it pulls your life goals forward.
+            </p>
+          </div>
+          <div className="rounded-2xl bg-[var(--sbi-sky)] px-4 py-2 border border-emerald-50/50 flex items-center gap-2 self-start sm:self-auto">
+            <div className="text-[10px] font-bold text-muted-foreground uppercase">Projected Sweep</div>
+            <div className="text-sm font-bold text-[var(--sbi-royal)]">₹{sweepRate.toLocaleString("en-IN")}/mo</div>
+          </div>
+        </div>
+
+        <div className="mt-5 space-y-4">
+          <div className="relative flex items-center">
+            <input
+              type="range"
+              min="0"
+              max="30000"
+              step="2500"
+              value={sweepRate}
+              onChange={(e) => setSweepRate(parseInt(e.target.value))}
+              className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[var(--sbi-blue)] outline-none"
+            />
+          </div>
+
+          {/* Timeline Nodes track */}
+          <div className="grid grid-cols-3 gap-2 text-center pt-2">
+            <div className="rounded-2xl bg-slate-50/60 p-3 border border-slate-100">
+              <div className="text-[9px] font-bold text-slate-400 uppercase">Home Purchase</div>
+              <div className="text-xs font-bold text-[var(--sbi-navy)] mt-0.5 transition-all duration-300">
+                {getShiftedDate(20, sweepRate)}
+              </div>
+              <div className="text-[9px] text-green-600 font-semibold mt-1">
+                {sweepRate > 15000 ? `${Math.round((sweepRate - 15000) / 2500)} Months Sooner!` : sweepRate === 15000 ? "On Track" : "Delayed Plan"}
+              </div>
+            </div>
+            <div className="rounded-2xl bg-slate-50/60 p-3 border border-slate-100">
+              <div className="text-[9px] font-bold text-slate-400 uppercase">Europe Vacation</div>
+              <div className="text-xs font-bold text-[var(--sbi-navy)] mt-0.5 transition-all duration-300">
+                {getShiftedDate(25, sweepRate)}
+              </div>
+              <div className="text-[9px] text-green-600 font-semibold mt-1">
+                {sweepRate > 15000 ? `${Math.round((sweepRate - 15000) / 2500)} Months Sooner!` : sweepRate === 15000 ? "On Track" : "Delayed Plan"}
+              </div>
+            </div>
+            <div className="rounded-2xl bg-slate-50/60 p-3 border border-slate-100">
+              <div className="text-[9px] font-bold text-slate-400 uppercase">Kids Education</div>
+              <div className="text-xs font-bold text-[var(--sbi-navy)] mt-0.5 transition-all duration-300">
+                {getShiftedDate(26, sweepRate)}
+              </div>
+              <div className="text-[9px] text-green-600 font-semibold mt-1">
+                {sweepRate > 15000 ? `${Math.round((sweepRate - 15000) / 2500)} Months Sooner!` : sweepRate === 15000 ? "On Track" : "Delayed Plan"}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center bg-emerald-50/20 border border-emerald-100 rounded-2xl px-4 py-3">
+            <p className="text-[11px] leading-relaxed text-emerald-800 font-medium">
+              {sweepRate > 15000 
+                ? `Saving ₹${sweepRate.toLocaleString()} monthly pulls your goals forward by ${Math.round((sweepRate - 15000) / 2500)} months.` 
+                : sweepRate === 15000 
+                ? "Your current savings schedule matches predicted expectations." 
+                : "Reducing your savings schedule will push your target achievement dates further out."
+              }
+            </p>
+            {sweepRate !== 15000 && (
+              <button
+                onClick={() => {
+                  toast.success(`Success! Saved ₹${sweepRate.toLocaleString()}/mo Sweep Schedule in Core Banking.`);
+                  setSweepRate(15000);
+                }}
+                className="rounded-xl bg-[var(--sbi-blue)] px-3 py-1.5 text-[10px] font-bold text-white shadow-md active:scale-95 transition"
+              >
+                Apply Sweep Schedule
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div className="mb-6 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
         {filters.map((f) => {
