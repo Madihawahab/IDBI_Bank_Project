@@ -30,7 +30,7 @@ export function useTranslation() {
   const { data: settings } = useQuery({
     queryKey: ["settings"],
     queryFn: settingsApi.getSettings,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0, // Always re-fetch after language mutation so UI updates instantly
   });
 
   const lang: Language = (settings?.language as Language) || "English";
@@ -47,14 +47,15 @@ export const translations: Record<Language, Record<string, string>> = {
     // Sidebar
     "menu.home": "Home",
     "menu.life_events": "Life Events",
-    "menu.ai_advisor": "AI Advisor",
+    "menu.ai_advisor": "Life Moments Avatar",
     "menu.finances": "Finances",
     "menu.trust_ledger": "Trust Ledger",
     "menu.money_mood": "Money Mood",
     "menu.offers": "Offers",
+    "menu.integration": "Integration Console",
     "menu.settings": "Settings",
     "menu.events_mobile": "Events",
-    "menu.ai_mobile": "AI",
+    "menu.ai_mobile": "Avatar",
     "menu.money_mobile": "Money",
     "menu.mood_mobile": "Mood",
     "menu.premium_customer": "Premium Customer",
@@ -79,8 +80,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "life_events.time_horizon": "Time Horizon",
 
     // AI Advisor
-    "ai_advisor.title": "Your Personal Financial Co-Pilot.",
-    "ai_advisor.subtitle": "Ask any question about your financial goals, savings plan, or portfolio suite.",
+    "ai_advisor.title": "Your Life Moments Avatar.",
+    "ai_advisor.subtitle": "Your conversational wealth coaching companion, backed by explainable AI.",
     "ai_advisor.placeholder": "Type your financial question here...",
     "ai_advisor.send": "Send a message",
     "ai_advisor.reset": "Reset Chat",

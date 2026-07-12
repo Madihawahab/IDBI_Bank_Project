@@ -18,6 +18,7 @@ import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppOffersRouteImport } from './routes/_app.offers'
 import { Route as AppMoneyMoodRouteImport } from './routes/_app.money-mood'
 import { Route as AppLifeEventsRouteImport } from './routes/_app.life-events'
+import { Route as AppIntegrationRouteImport } from './routes/_app.integration'
 import { Route as AppFinancesRouteImport } from './routes/_app.finances'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppAiAdvisorRouteImport } from './routes/_app.ai-advisor'
@@ -66,6 +67,11 @@ const AppLifeEventsRoute = AppLifeEventsRouteImport.update({
   path: '/life-events',
   getParentRoute: () => AppRoute,
 } as any)
+const AppIntegrationRoute = AppIntegrationRouteImport.update({
+  id: '/integration',
+  path: '/integration',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppFinancesRoute = AppFinancesRouteImport.update({
   id: '/finances',
   path: '/finances',
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/ai-advisor': typeof AppAiAdvisorRoute
   '/dashboard': typeof AppDashboardRoute
   '/finances': typeof AppFinancesRoute
+  '/integration': typeof AppIntegrationRoute
   '/life-events': typeof AppLifeEventsRoute
   '/money-mood': typeof AppMoneyMoodRoute
   '/offers': typeof AppOffersRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/ai-advisor': typeof AppAiAdvisorRoute
   '/dashboard': typeof AppDashboardRoute
   '/finances': typeof AppFinancesRoute
+  '/integration': typeof AppIntegrationRoute
   '/life-events': typeof AppLifeEventsRoute
   '/money-mood': typeof AppMoneyMoodRoute
   '/offers': typeof AppOffersRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/_app/ai-advisor': typeof AppAiAdvisorRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/finances': typeof AppFinancesRoute
+  '/_app/integration': typeof AppIntegrationRoute
   '/_app/life-events': typeof AppLifeEventsRoute
   '/_app/money-mood': typeof AppMoneyMoodRoute
   '/_app/offers': typeof AppOffersRoute
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
     | '/ai-advisor'
     | '/dashboard'
     | '/finances'
+    | '/integration'
     | '/life-events'
     | '/money-mood'
     | '/offers'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
     | '/ai-advisor'
     | '/dashboard'
     | '/finances'
+    | '/integration'
     | '/life-events'
     | '/money-mood'
     | '/offers'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '/_app/ai-advisor'
     | '/_app/dashboard'
     | '/_app/finances'
+    | '/_app/integration'
     | '/_app/life-events'
     | '/_app/money-mood'
     | '/_app/offers'
@@ -238,6 +250,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLifeEventsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/integration': {
+      id: '/_app/integration'
+      path: '/integration'
+      fullPath: '/integration'
+      preLoaderRoute: typeof AppIntegrationRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/finances': {
       id: '/_app/finances'
       path: '/finances'
@@ -266,6 +285,7 @@ interface AppRouteChildren {
   AppAiAdvisorRoute: typeof AppAiAdvisorRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppFinancesRoute: typeof AppFinancesRoute
+  AppIntegrationRoute: typeof AppIntegrationRoute
   AppLifeEventsRoute: typeof AppLifeEventsRoute
   AppMoneyMoodRoute: typeof AppMoneyMoodRoute
   AppOffersRoute: typeof AppOffersRoute
@@ -277,6 +297,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAiAdvisorRoute: AppAiAdvisorRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppFinancesRoute: AppFinancesRoute,
+  AppIntegrationRoute: AppIntegrationRoute,
   AppLifeEventsRoute: AppLifeEventsRoute,
   AppMoneyMoodRoute: AppMoneyMoodRoute,
   AppOffersRoute: AppOffersRoute,

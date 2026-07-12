@@ -14,6 +14,7 @@ import {
   X,
   LogOut,
   ChevronLeft,
+  Terminal,
 } from "lucide-react";
 import { useState, useEffect, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +23,7 @@ import { api, authApi } from "@/lib/api";
 import { toast } from "sonner";
 import { Notification } from "../types/api";
 import { useTranslation } from "@/lib/translations";
+import { AvatarWidget } from "./AvatarWidget";
 
 const NAV_KEYS: Record<string, string> = {
   "Home": "menu.home",
@@ -31,6 +33,7 @@ const NAV_KEYS: Record<string, string> = {
   "Trust Ledger": "menu.trust_ledger",
   "Money Mood": "menu.money_mood",
   "Offers": "menu.offers",
+  "Integration": "menu.integration",
   "Settings": "menu.settings"
 };
 
@@ -50,6 +53,7 @@ const NAV = [
   { to: "/trust-ledger", label: "Trust Ledger", icon: Shield },
   { to: "/money-mood", label: "Money Mood", icon: Smile },
   { to: "/offers", label: "Offers", icon: Gift },
+  { to: "/integration", label: "Integration", icon: Terminal },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -209,7 +213,15 @@ export function AppShell({ children }: { children?: ReactNode }) {
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
-              <Icon className={cn("h-[18px] w-[18px]", isActive(to) && "text-[var(--sbi-blue)]")} />
+              {to === "/ai-advisor" ? (
+                <AvatarWidget
+                  state={isActive(to) ? "speaking" : "idle"}
+                  size="sm"
+                  className="h-[22px] w-[22px] shrink-0"
+                />
+              ) : (
+                <Icon className={cn("h-[18px] w-[18px]", isActive(to) && "text-[var(--sbi-blue)]")} />
+              )}
               {t(NAV_KEYS[label] || label, label)}
             </Link>
           ))}
@@ -364,7 +376,15 @@ export function AppShell({ children }: { children?: ReactNode }) {
                       "bg-[var(--sbi-blue)] text-white shadow-[0_6px_16px_-4px_rgba(0,173,239,0.6)]",
                   )}
                 >
-                  <Icon className={cn("h-4 w-4", !active && "text-muted-foreground")} />
+                  {to === "/ai-advisor" ? (
+                    <AvatarWidget
+                      state={active ? "speaking" : "idle"}
+                      size="sm"
+                      className="h-6 w-6 shrink-0"
+                    />
+                  ) : (
+                    <Icon className={cn("h-4 w-4", !active && "text-muted-foreground")} />
+                  )}
                 </div>
                 <span className={cn(active ? "text-[var(--sbi-royal)]" : "text-muted-foreground")}>
                   {t(MOBILE_NAV_KEYS[label] || label, label)}
