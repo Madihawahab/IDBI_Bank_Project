@@ -20,12 +20,14 @@ import {
   AlertCircle,
   QrCode,
   type LucideIcon,
+  X,
 } from "lucide-react";
 import { GlassCard } from "@/components/app-shell";
 import { dashboardApi, transactionsApi, authApi } from "@/lib/api";
 import { toast } from "sonner";
 import { DashboardData, Transaction } from "../types/api";
 import { useTranslation } from "@/lib/translations";
+import { AvatarWidget } from "@/components/AvatarWidget";
 
 function DashboardErrorFallback({ error, reset }: { error: Error; reset: () => void }) {
   return (
@@ -70,6 +72,7 @@ function HomePage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const [showNudge, setShowNudge] = useState(true);
 
   // Modals state
   const [isTransferOpen, setIsTransferOpen] = useState(false);
@@ -1087,6 +1090,52 @@ function HomePage() {
                 })
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Avatar Nudge */}
+      {showNudge && (
+        <div className="fixed bottom-24 right-6 lg:bottom-8 lg:right-8 z-40 flex items-end gap-3 max-w-xs sm:max-w-sm animate-scaleUp">
+          <div className="relative rounded-2xl border border-emerald-100 bg-white p-3.5 shadow-[0_12px_40px_rgba(0,131,108,0.12)] border-l-4 border-l-[var(--sbi-blue)]">
+            <button
+              onClick={() => setShowNudge(false)}
+              className="absolute right-2 top-2 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+              title="Dismiss"
+            >
+              <X className="h-3 w-3" />
+            </button>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--sbi-blue)]">
+              Life Moments Coach
+            </div>
+            <div className="mt-1 text-xs font-bold text-[var(--sbi-navy)]">
+              {data?.ai_insight?.title || "Optimize Your Savings"}
+            </div>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              {data?.ai_insight?.description || "You have surplus funds in your salary account. Let's sweep them to earn high yield."}
+            </p>
+            <button
+              onClick={() => {
+                const title = data?.ai_insight?.title || "Increase SIP by ₹3,000";
+                const prompt = `Tell me more about the recommendation: "${title}". Why is it useful and how confident are you about it?`;
+                if (typeof window !== "undefined") {
+                  sessionStorage.setItem("idbi_pending_prompt", prompt);
+                }
+                navigate({ to: "/ai-advisor" });
+              }}
+              className="mt-2.5 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[var(--sbi-blue)] hover:opacity-90"
+            >
+              Consult Avatar <ArrowRight className="h-3 w-3" />
+            </button>
+          </div>
+          <div className="relative group shrink-0">
+            <div className="absolute inset-0 bg-[var(--sbi-blue)] rounded-full blur-md opacity-30 group-hover:opacity-50 transition" />
+            <AvatarWidget
+              state="speaking"
+              size="sm"
+              className="relative z-10 h-14 w-14 rounded-full border border-slate-100 bg-white p-0.5 shadow-md cursor-pointer active:scale-95 transition hover:scale-105"
+              onClick={() => navigate({ to: "/ai-advisor" })}
+            />
           </div>
         </div>
       )}
