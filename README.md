@@ -1,4 +1,7 @@
 # 🏦 Life Moments Avatar — IDBI Bank AI Wealth Advisor
+Links-  frontend- https://idbi-bank-project.vercel.app/ 
+        backend- https://idbi-bank-project.onrender.com
+
 
 > **IDBI Innovate Hackathon Submission** — AI-Powered Digital Wealth Management Application
 
